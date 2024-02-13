@@ -47,18 +47,21 @@ public class Main {
             thread.start();
             relpThreads.put(thread, relpThread);
         }
-        new Timer().scheduleAtFixedRate(new TimerTask(){
+        Timer statsReporter = new Timer();
+        TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
                 printEps();
             }
-        },10000,10000);
+        };
+        statsReporter.scheduleAtFixedRate(timerTask, 10000, 10000);
         Thread shutdownHook = new Thread(() -> {
-            System.out.println("Shutting down...");
-            relpThreads.forEach((thread, relpThread) -> {
-                relpThread.shutdown();
+            timerTask.cancel();
+            System.out.println("Shutting down threads in parallel...");
+            relpThreads.entrySet().parallelStream().forEach((entry) -> {
+                entry.getValue().shutdown();
                 try {
-                    thread.join();
+                    entry.getKey().join(5000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
