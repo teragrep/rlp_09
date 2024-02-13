@@ -35,7 +35,6 @@ class RelpThread implements Runnable {
             }
             boolean notSent = true;
             while (notSent) {
-                messagesSent.addAndGet(batchSize);
                 try {
                     relpConnection.commit(relpBatch);
                 } catch (IllegalStateException e) {
@@ -53,6 +52,7 @@ class RelpThread implements Runnable {
                     notSent = false;
                 }
             }
+            messagesSent.addAndGet(batchSize);
         }
     }
 
