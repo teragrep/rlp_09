@@ -5,13 +5,14 @@ import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Main {
     private static final AtomicLong messagesSent = new AtomicLong();
-    private static RelpThread[] relpThreads;
+    private static final HashMap<Thread, RelpThread> relpThreads = new HashMap<>();
     private static final long startTime = Instant.now().toEpochMilli();
     private static long lastReportEventsSent = 0;
     private static long lastReportTime = Instant.now().toEpochMilli();
@@ -24,7 +25,6 @@ public class Main {
         int threads = Integer.parseInt(System.getProperty("threads", "4"));
         boolean useTls = Boolean.parseBoolean(System.getProperty("useTls", "false"));
         int payloadSize = Integer.parseInt(System.getProperty("payloadSize", "10"));
-        relpThreads = new RelpThread[threads];
         byte[] message = new SyslogMessage()
                 .withTimestamp(Instant.now().toEpochMilli())
                 .withAppName(appname)
@@ -45,7 +45,7 @@ public class Main {
             RelpThread relpThread = new RelpThread("RelpThread #" + i, target, port, message, messagesSent);
             Thread thread = new Thread(relpThread);
             thread.start();
-            relpThreads[i] = relpThread;
+            relpThreads.put(thread, relpThread);
         }
         new Timer().scheduleAtFixedRate(new TimerTask(){
             @Override
@@ -54,10 +54,15 @@ public class Main {
             }
         },10000,10000);
         Thread shutdownHook = new Thread(() -> {
-            System.out.println("Detected ctrl-c, shutting down threads");
-            for(RelpThread thread : relpThreads) {
-                thread.shutdown();
-            }
+            System.out.println("Shutting down...");
+            relpThreads.forEach((thread, relpThread) -> {
+                relpThread.shutdown();
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            });
             printEps();
         });
         Runtime.getRuntime().addShutdownHook(shutdownHook);
