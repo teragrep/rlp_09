@@ -25,6 +25,11 @@ public class Main {
         int threads = Integer.parseInt(System.getProperty("threads", "4"));
         boolean useTls = Boolean.parseBoolean(System.getProperty("useTls", "false"));
         int payloadSize = Integer.parseInt(System.getProperty("payloadSize", "10"));
+        int batchSize = Integer.parseInt(System.getProperty("batchSize", "1"));
+        if(batchSize <= 0 || batchSize > 4096) {
+            System.err.println("Batch size must be between 1 and 4096");
+            System.exit(1);
+        }
         byte[] message = new SyslogMessage()
                 .withTimestamp(Instant.now().toEpochMilli())
                 .withAppName(appname)
@@ -38,11 +43,13 @@ public class Main {
         System.out.printf("Using hostname <[%s]>%n", hostname);
         System.out.printf("Using appname <[%s]>%n", appname);
         System.out.printf("Adding <[%s]> characters to payload size making total event size <%s>%n", payloadSize, messageLength);
+        System.out.printf("Sending <[%s]> messages per batch%n", batchSize);
         System.out.printf("Sending messages to: <[%s]:[%s]>%n", target, port);
-        System.out.printf("Using <[%s]> threads%n", threads);
         System.out.printf("TLS enabled (FIXME: Implement): <[%s]>%n", useTls);
+
+        System.out.printf("Starting <[%s]> threads%n", threads);
         for(int i = 0; i< threads; i++) {
-            RelpThread relpThread = new RelpThread("RelpThread #" + i, target, port, message, messagesSent);
+            RelpThread relpThread = new RelpThread("RelpThread #" + i, target, port, message, messagesSent, batchSize);
             Thread thread = new Thread(relpThread);
             thread.start();
             relpThreads.put(thread, relpThread);
@@ -61,7 +68,7 @@ public class Main {
             relpThreads.entrySet().parallelStream().forEach((entry) -> {
                 entry.getValue().shutdown();
                 try {
-                    entry.getKey().join(5000);
+                    entry.getKey().join(1000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -74,19 +81,23 @@ public class Main {
     private static void printEps() {
         long totalSent = messagesSent.get();
         long deltaSent = totalSent-lastReportEventsSent;
+        float totalBytes = (float) totalSent*messageLength;
+        float deltaBytes = (float) deltaSent*messageLength;
         long currentTime = Instant.now().toEpochMilli();
         float totalElapsed = (float) (currentTime - startTime)/1000;
         float deltaElapsed = (float) (currentTime - lastReportTime)/1000;
         System.out.format(
-                "Sent %,d messages in %,.1f seconds (%,.0f EPS / ~%,.2f MB/s), total messages sent %,1d in %,.1f seconds (%,.0f EPS / ~%,.2f MB/s)%n",
+                "Sent %,d messages / %,.2f MB in %,.1f seconds (%,.0f EPS / ~%,.2f MB/s), total sent %,1d messages / %,.1f MB in %,.1f seconds (%,.0f EPS / ~%,.2f MB/s)%n",
                 deltaSent,
+                deltaBytes/1024/1024,
                 deltaElapsed,
                 deltaSent/deltaElapsed,
-                ((deltaSent*messageLength)/deltaElapsed)/1024/1024,
+                (deltaBytes/deltaElapsed)/1024/1024,
                 totalSent,
+                totalBytes/1024/1024,
                 totalElapsed,
                 totalSent/totalElapsed,
-                ((totalSent*messageLength)/totalElapsed)/1024/1024
+                (totalBytes/totalElapsed)/1024/1024
         );
         lastReportEventsSent = totalSent;
         lastReportTime = currentTime;

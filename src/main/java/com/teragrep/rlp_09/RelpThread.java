@@ -14,31 +14,37 @@ class RelpThread implements Runnable {
     private final int port;
     private final byte[] message;
     private final AtomicLong messagesSent;
-    private final RelpConnection relpConnection;
-    RelpThread(String name, String target, int port, byte[] message, AtomicLong messagesSent) {
+    private RelpConnection relpConnection;
+    private int batchSize;
+    RelpThread(String name, String target, int port, byte[] message, AtomicLong messagesSent, int batchSize) {
         this.name = name;
         this.target = target;
         this.port = port;
         this.message = message;
         this.messagesSent = messagesSent;
-        this.relpConnection = new RelpConnection();
+        this.batchSize = batchSize;
     }
     @Override
     public void run() {
-        System.out.printf("[%s] Starting%n", name);
+        relpConnection = new RelpConnection();
         connect();
         while(stayRunning) {
             RelpBatch relpBatch = new RelpBatch();
-            relpBatch.insert(message);
+            for(int i=1; i<=batchSize; i++) {
+                relpBatch.insert(message);
+            }
             boolean notSent = true;
             while (notSent) {
-                messagesSent.incrementAndGet();
+                messagesSent.addAndGet(batchSize);
                 try {
                     relpConnection.commit(relpBatch);
+                } catch (IllegalStateException e) {
+                    System.out.printf("[%s] Failed to send message: %s", name, e.getMessage());
+                    System.exit(1);
                 } catch (IOException | TimeoutException e) {
-                    System.out.printf("[%s] Failed to commit%n", name);
+                    System.out.printf("[%s] Failed to commit: %s%n", name, e.getMessage());
+                    System.exit(1);
                 }
-
                 if (!relpBatch.verifyTransactionAll()) {
                     System.out.printf("[%s] Failed to send message%n", name);
                     relpBatch.retryAllFailed();
@@ -48,7 +54,6 @@ class RelpThread implements Runnable {
                 }
             }
         }
-        System.out.printf("[%s] Exiting%n", name);
     }
 
     public void connect() {
