@@ -18,10 +18,4 @@
       <scope>runtime</scope>
     </dependencySet>
   </dependencySets>
-  <fileSets>
-    <fileSet>
-      <directory>${project.basedir}/src/main/config</directory>
-      <useDefaultExcludes>true</useDefaultExcludes>
-    </fileSet>
-  </fileSets>
 </assembly>
