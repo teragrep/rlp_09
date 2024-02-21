@@ -83,7 +83,7 @@ class RelpConfig {
             .withHostname(this.hostname)
             .withFacility(Facility.USER)
             .withSeverity(Severity.INFORMATIONAL)
-            .withMsg("X".repeat(this.payloadSize))
+            .withMsg(new String(new char[this.payloadSize]).replace("\0", "X"))
             .toRfc5424SyslogMessage()
             .getBytes(StandardCharsets.UTF_8);
         this.messageLength = message.length;
