@@ -46,17 +46,46 @@
 
 package com.teragrep.rlp_09;
 
-public class Main {
-    public static void main(String[] args) {
-        RelpConfig relpConfig = new RelpConfig();
-        System.out.printf("Using hostname <[%s]>%n", relpConfig.hostname);
-        System.out.printf("Using appname <[%s]>%n", relpConfig.appname);
-        System.out.printf("Adding <[%s]> characters to payload size making total event size <%s>%n", relpConfig.payloadSize, relpConfig.messageLength);
-        System.out.printf("Sending <[%s]> messages per batch%n", relpConfig.batchSize);
-        System.out.printf("Sending messages to: <[%s]:[%s]>%n", relpConfig.target, relpConfig.port);
-        System.out.printf("TLS enabled (FIXME: Implement): <[%s]>%n", relpConfig.useTls);
+import com.teragrep.rlo_14.Facility;
+import com.teragrep.rlo_14.Severity;
+import com.teragrep.rlo_14.SyslogMessage;
 
-        RelpFlooder relpFlooder = new RelpFlooder(relpConfig);
-        relpFlooder.start();
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+
+class RelpConfig {
+    final String hostname;
+    final String appname;
+    final String target;
+    final int port;
+    final int threads;
+    final boolean useTls;
+    final int payloadSize;
+    final int batchSize;
+    final byte[] message;
+    final int messageLength;
+    RelpConfig() {
+        this.hostname = System.getProperty("hostname", "localhost");
+        this.appname = System.getProperty("appname", "rlp_09");
+        this.target = System.getProperty("target", "127.0.0.1");
+        this.port = Integer.parseInt(System.getProperty("port", "1601"));
+        this.threads = Integer.parseInt(System.getProperty("threads", "4"));
+        this.useTls = Boolean.parseBoolean(System.getProperty("useTls", "false"));
+        this.payloadSize = Integer.parseInt(System.getProperty("payloadSize", "10"));
+        this.batchSize = Integer.parseInt(System.getProperty("batchSize", "1"));
+        if(this.batchSize <= 0 || this.batchSize > 4096) {
+            System.err.println("Batch size must be between 1 and 4096");
+            System.exit(1);
+        }
+        this.message = new SyslogMessage()
+            .withTimestamp(Instant.now().toEpochMilli())
+            .withAppName(this.appname)
+            .withHostname(this.hostname)
+            .withFacility(Facility.USER)
+            .withSeverity(Severity.INFORMATIONAL)
+            .withMsg("X".repeat(this.payloadSize))
+            .toRfc5424SyslogMessage()
+            .getBytes(StandardCharsets.UTF_8);
+        this.messageLength = message.length;
     }
 }

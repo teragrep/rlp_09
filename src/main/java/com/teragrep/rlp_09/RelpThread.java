@@ -55,20 +55,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 class RelpThread implements Runnable {
     private boolean stayRunning = true;
+    private RelpConnection relpConnection = new RelpConnection();
     private final String name;
-    private final String target;
-    private final int port;
-    private final byte[] message;
     private final AtomicLong messagesSent;
-    private RelpConnection relpConnection;
-    private int batchSize;
-    RelpThread(String name, String target, int port, byte[] message, AtomicLong messagesSent, int batchSize) {
+    private final RelpConfig relpConfig;
+    RelpThread(String name, RelpConfig relpConfig, AtomicLong messagesSent) {
         this.name = name;
-        this.target = target;
-        this.port = port;
-        this.message = message;
+        this.relpConfig = relpConfig;
         this.messagesSent = messagesSent;
-        this.batchSize = batchSize;
     }
     @Override
     public void run() {
@@ -76,8 +70,8 @@ class RelpThread implements Runnable {
         connect();
         while(stayRunning) {
             RelpBatch relpBatch = new RelpBatch();
-            for(int i=1; i<=batchSize; i++) {
-                relpBatch.insert(message);
+            for(int i=1; i<=relpConfig.batchSize; i++) {
+                relpBatch.insert(relpConfig.message);
             }
             boolean notSent = true;
             while (notSent) {
@@ -98,13 +92,13 @@ class RelpThread implements Runnable {
                     notSent = false;
                 }
             }
-            messagesSent.addAndGet(batchSize);
+            messagesSent.addAndGet(relpConfig.batchSize);
         }
     }
 
     public void connect() {
         try {
-            relpConnection.connect(target, port);
+            relpConnection.connect(relpConfig.target, relpConfig.port);
         } catch (IOException | TimeoutException e) {
             System.out.printf("[%s] Failed to connect to the server%n", name);
             System.exit(1);
