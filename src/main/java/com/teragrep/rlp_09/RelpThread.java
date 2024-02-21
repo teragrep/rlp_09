@@ -94,6 +94,11 @@ class RelpThread implements Runnable {
             }
             messagesSent.addAndGet(relpConfig.batchSize);
         }
+        try {
+            relpConnection.disconnect();
+        } catch (IOException | TimeoutException e) {
+            System.out.printf("[%s] Failed to disconnect from the server%n", name);
+        }
     }
 
     public void connect() {
