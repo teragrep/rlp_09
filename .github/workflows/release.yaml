@@ -21,22 +21,20 @@ jobs:
         distribution: 'temurin'
         server-id: github
         settings-path: ${{ github.workspace }}
-        gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-        gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-    - name: Publish to GitHub Packages
-      run: mvn --batch-mode -Drevision=${{ github.event.release.tag_name }} -Dsha1= -Dchangelist= clean deploy -Ppublish-github-packages
+    - name: Build jar
+      run: mvn --batch-mode -Drevision=${{ github.event.release.tag_name }} -Dsha1= -Dchangelist= clean package
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
     - name: Pack RPM
       run: cd rpm/ && mvn --batch-mode -Drevision=${{ github.event.release.tag_name }} -Dsha1= -Dchangelist= -f rpm.pom.xml package
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
     - name: Attach rpm to release
       uses: softprops/action-gh-release@v1
       with:
-        files: rpm/target/rpm/com.teragrep-rlp_09/RPMS/noarch/com.teragrep-rlp_09-*.noarch.rpm
+        files: |
+          rpm/target/rpm/com.teragrep-rlp_09/RPMS/noarch/com.teragrep-rlp_09-*.noarch.rpm
+          target/rlp_09-*-jar-with-dependencies.jar

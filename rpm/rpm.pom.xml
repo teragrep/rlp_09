@@ -89,7 +89,7 @@
               <recurseDirectories>true</recurseDirectories>
               <sources>
                 <source>
-                  <location>${project.basedir}/../target/rlp_09-jar-with-dependencies.jar</location>
+                  <location>${project.basedir}/../target/rlp_09-${revision}${sha1}${changelist}-jar-with-dependencies.jar</location>
                   <destination>rlp_09.jar</destination>
                 </source>
               </sources>
