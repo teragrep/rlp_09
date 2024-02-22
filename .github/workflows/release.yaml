@@ -37,4 +37,4 @@ jobs:
       with:
         files: |
           rpm/target/rpm/com.teragrep-rlp_09/RPMS/noarch/com.teragrep-rlp_09-*.noarch.rpm
-          target/rlp_09-jar-with-dependencies.jar
+          target/rlp_09-*-jar-with-dependencies.jar
