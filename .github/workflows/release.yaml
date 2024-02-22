@@ -22,8 +22,8 @@ jobs:
         server-id: github
         settings-path: ${{ github.workspace }}
 
-    - name: Publish to GitHub Packages
-      run: mvn --batch-mode -Drevision=${{ github.event.release.tag_name }} -Dsha1= -Dchangelist= clean deploy
+    - name: Build jar
+      run: mvn --batch-mode -Drevision=${{ github.event.release.tag_name }} -Dsha1= -Dchangelist= clean package
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -35,4 +35,6 @@ jobs:
     - name: Attach rpm to release
       uses: softprops/action-gh-release@v1
       with:
-        files: rpm/target/rpm/com.teragrep-rlp_09/RPMS/noarch/com.teragrep-rlp_09-*.noarch.rpm
+        files: |
+          rpm/target/rpm/com.teragrep-rlp_09/RPMS/noarch/com.teragrep-rlp_09-*.noarch.rpm
+          target/rlp_09-jar-with-dependencies.jar
