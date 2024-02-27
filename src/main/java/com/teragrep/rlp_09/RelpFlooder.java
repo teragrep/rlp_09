@@ -1,5 +1,5 @@
 /*
- * Teragrep RELP Flooder RLP_09
+ * Teragrep RELP Flooder Library RLP_09
  * Copyright (C) 2024  Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
@@ -46,77 +46,47 @@
 
 package com.teragrep.rlp_09;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-class RelpFlooder {
+public class RelpFlooder {
     private final AtomicLong messagesSent = new AtomicLong();
-    private final HashMap<Thread, RelpThread> relpThreads = new HashMap<>();
-    private final long startTime = Instant.now().toEpochMilli();
-    private long lastReportEventsSent = 0;
-    private long lastReportTime = Instant.now().toEpochMilli();
-    private final RelpConfig relpConfig;
-    public RelpFlooder(RelpConfig relpConfig) {
-        this.relpConfig = relpConfig;
+    private final ExecutorService executorService;
+    private final AtomicBoolean stayRunning = new AtomicBoolean(true);
+
+    public Long getMessagesSent() {
+        return messagesSent.get();
     }
-    public void start() {
-        System.out.printf("Starting <[%s]> threads%n", relpConfig.threads);
-        for (int i = 0; i < relpConfig.threads; i++) {
-            RelpThread relpThread = new RelpThread("RelpThread #" + i, relpConfig, messagesSent);
-            Thread thread = new Thread(relpThread);
-            thread.start();
-            relpThreads.put(thread, relpThread);
+
+    private final RelpFlooderConfig relpFlooderConfig;
+    public RelpFlooder() {
+        this(new RelpFlooderConfig());
+    }
+    public RelpFlooder(RelpFlooderConfig relpFlooderConfig) {
+        this.relpFlooderConfig = relpFlooderConfig;
+        this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.getThreads());
+    }
+    public void start()  {
+        List<RelpFlooderTask> relpFlooderTaskList = new ArrayList<>();
+        for (int i=0; i<relpFlooderConfig.getThreads(); i++) {
+            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(relpFlooderConfig, messagesSent, stayRunning);
+            relpFlooderTaskList.add(relpFlooderTask);
         }
-
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                printEps();
-            }
-        };
-        Timer statsReporter = new Timer();
-        statsReporter.scheduleAtFixedRate(timerTask, 10000, 10000);
-        Thread shutdownHook = new Thread(() -> {
-            timerTask.cancel();
-            System.out.println("Shutting down threads in parallel...");
-            relpThreads.entrySet().parallelStream().forEach((entry) -> {
-                entry.getValue().shutdown();
-                try {
-                    entry.getKey().join(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            printEps();
-        });
-        Runtime.getRuntime().addShutdownHook(shutdownHook);
+        try {
+            executorService.invokeAll(relpFlooderTaskList);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        // Throw an exception if threads return and we haven't stopped properly
+        if(stayRunning.get()){
+            throw new RuntimeException("Execution of RelpFlooder failed");
+        }
     }
 
-    private void printEps() {
-        long totalSent = messagesSent.get();
-        long deltaSent = totalSent-lastReportEventsSent;
-        float totalBytes = (float) totalSent*relpConfig.messageLength;
-        float deltaBytes = (float) deltaSent*relpConfig.messageLength;
-        long currentTime = Instant.now().toEpochMilli();
-        float totalElapsed = (float) (currentTime - startTime)/1000;
-        float deltaElapsed = (float) (currentTime - lastReportTime)/1000;
-        System.out.format(
-                "Sent %,d messages / %,.2f MB in %,.1f seconds (%,.0f EPS / ~%,.2f MB/s), total sent %,1d messages / %,.1f MB in %,.1f seconds (%,.0f EPS / ~%,.2f MB/s)%n",
-                deltaSent,
-                deltaBytes/1024/1024,
-                deltaElapsed,
-                deltaSent/deltaElapsed,
-                (deltaBytes/deltaElapsed)/1024/1024,
-                totalSent,
-                totalBytes/1024/1024,
-                totalElapsed,
-                totalSent/totalElapsed,
-                (totalBytes/totalElapsed)/1024/1024
-        );
-        lastReportEventsSent = totalSent;
-        lastReportTime = currentTime;
+    public void stop() {
+        stayRunning.set(false);
     }
 }

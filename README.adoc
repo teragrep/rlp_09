@@ -1,48 +1,60 @@
-# RELP Flooder rlp_09
+= RELP Flooder library rlp_09
 
-Simple but scalable RELP flooder
+Simple but scalable RELP flooder library
 
-## Features
+== Features
 
-- Simple to set up
 - Simple to use
-- Gives statistics
 - Scales to as many threads as wanted
 
-## Limitations
+== Limitations
 
+- Minimal failure tolerance, mostly meant for testing
+- Limited usability outside specific testing situations
 - No structured data support yet
 - No TLS support yet
 - No customizable message support yet
 - Supports only RFC5424
 
-## How to compile
+== How to use
 
-`mvn clean package`
+[sourcecode,java]
+----
+// Custom config, for rest see Configurations
+RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig();
+relpFlooderConfig.setAppname("different_appname");
+RelpFlooder relpFlooder = new RelpFlooder(relpFlooderConfig);
+relpFlooder.start();
+relpFlooder.stop();
 
-## How to run
+// All defaults
+RelpFlooder relpFlooder = new RelpFlooder();
+relpFlooder.start();
+relpFlooder.stop();
 
-`java -jar rlp_09.jar`
+// Get total messages count
+relpFlooder.getMessagesSent();
+----
 
-## Configurations
+== Configurations
 
 
-[cols="3"]
+[cols="4"]
 |===
-|System property|Default value|Usage
+|Configuration key|Setter|Default value|Usage
 
-|hostname|localhost|Sets hostname for the event
-|appname|rlp_09|Sets used appname for the event
-|target|127.0.0.1|RELP target server
-|port|1601|RELP target port
-|threads|4|RELP Flooder thread count
-|useTls|false|Is TLS used for connections
-|payloadSize|10|Event message payload size (excludes any headers)
-|batchSize|1|How many events is sent in one batch
+|hostname|setHostname(String hostname)|localhost|Sets hostname for the event
+|appname|setAppname(String appname)|rlp_09|Sets used appname for the event
+|target|setTarget(String target)|127.0.0.1|RELP target server
+|port|setPort(int port)|1601|RELP target port
+|threads|setThreads(int threads)|4|RELP Flooder thread count
+|useTls|setUseTls(boolean useTls)|false|Is TLS used for connections
+|payloadSize|setPayloadSize(int payloadSize)|10|Event message payload size (excludes any headers)
+|batchSize|setBatchSize(int batchSize)|1|How many events is sent in one batch
 
 |===
 
-## Contributing
+== Contributing
 
 You can involve yourself with our project by https://github.com/teragrep/rlp_09/issues/new/choose[opening an issue] or submitting a pull request.
 
@@ -55,8 +67,9 @@ Contribution requirements:
 
 Read more in our https://github.com/teragrep/teragrep/blob/main/contributing.adoc[Contributing Guideline].
 
-### Contributor License Agreement
+=== Contributor License Agreement
 
 Contributors must sign https://github.com/teragrep/teragrep/blob/main/cla.adoc[Teragrep Contributor License Agreement] before a pull request is accepted to organization's repositories.
 
 You need to submit the CLA only once. After submitting the CLA you can contribute to all Teragrep's repositories.
+----
