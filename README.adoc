@@ -6,35 +6,31 @@ Simple but scalable RELP flooder library
 
 - Simple to use
 - Scales to as many threads as wanted
+- Supports user-supplied record providers to make dynamic content
 
 == Limitations
 
 - Minimal failure tolerance, mostly meant for testing
 - Limited usability outside specific testing situations
 - Supports only one record per RELP batch
-- Doesn't support dynamic message modification
 - No TLS support yet
 
 == How to use
 
 [sourcecode,java]
 ----
-// All defaults
-RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig();
-
-// All defaults except record
-RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig(record);
-
 // Set all settings
 RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig(target, port, record, threads);
 
 // Alternatively use setters
 RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig();
-relpFlooderConfig.setRecord("example record");
 relpFlooderConfig.setTarget("127.0.0.1");
+relpFlooderConfig.setPort(601);
+relpFlooderConfig.setThreads(4);
 
-// And use
-RelpFlooder relpFlooder = new RelpFlooder(relpFlooderConfig);
+// Provide config and Iterator<byte[]> provider to RelpFlooder, here is example implementation
+ExampleRelpFlooderIteratorFactory exampleRelpFlooderIteratorFactory = new ExampleRelpFlooderIteratorFactory();
+RelpFlooder relpFlooder = new RelpFlooder(relpFlooderConfig, exampleRelpFlooderIteratorFactory);
 relpFlooder.start();
 relpFlooder.stop();
 
@@ -47,6 +43,13 @@ LOGGER.info("Sent <{}> records per thread", relpFlooder.getRecordsSentPerThread(
 LOGGER.info("Sent <{}> bytes per thread", relpFlooder.getTotalBytesSentPerThread());
 ----
 
+Example Iterator will send only static records like as
+
+[source,sh]
+----
+<14>1 2024-02-29T13:58:05.605Z localhost rlp_09 - - - Example rlo_09 event
+----
+
 == Configurations
 
 [cols="4"]
@@ -55,8 +58,6 @@ LOGGER.info("Sent <{}> bytes per thread", relpFlooder.getTotalBytesSentPerThread
 
 |target|setTarget(String target)|127.0.0.1|Sets RELP target
 |port|setPort(int port)|601|Sets RELP port
-|record|setRecord(String record)|<snip>|Set record as string
-|record|setRecord(byte[] record)|<snip>|Set record as bytearray
 |threads|setThreads(int threads)|1|Flooder thread count
 
 |===

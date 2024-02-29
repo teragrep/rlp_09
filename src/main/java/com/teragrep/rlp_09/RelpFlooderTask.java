@@ -50,6 +50,7 @@ import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -62,9 +63,11 @@ class RelpFlooderTask implements Callable<Object> {
     private boolean stayRunning = true;
     private final RelpFlooderConfig relpFlooderConfig;
     private final int threadId;
-    CountDownLatch latch = new CountDownLatch(1);
-    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig) throws RuntimeException {
+    private final CountDownLatch latch = new CountDownLatch(1);
+    private final Iterator<byte[]> iterator;
+    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig, Iterator<byte[]> iterator) throws RuntimeException {
         this.threadId = threadId;
+        this.iterator = iterator;
         this.relpFlooderConfig = relpFlooderConfig;
     }
 
@@ -73,8 +76,9 @@ class RelpFlooderTask implements Callable<Object> {
         relpConnection = new RelpConnection();
         connect();
         while (stayRunning) {
+            byte[] message = iterator.next();
             RelpBatch relpBatch = new RelpBatch();
-            relpBatch.insert(relpFlooderConfig.getRecord());
+            relpBatch.insert(message);
             try {
                 relpConnection.commit(relpBatch);
             } catch (IOException | TimeoutException e) {
@@ -84,7 +88,7 @@ class RelpFlooderTask implements Callable<Object> {
                 throw new RuntimeException("Can't verify transactions");
             }
             recordsSent++;
-            bytesSent += relpFlooderConfig.getRecordLength();
+            bytesSent += message.length;
         }
         disconnect();
         latch.countDown();

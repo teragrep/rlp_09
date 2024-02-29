@@ -45,49 +45,33 @@
  */
 
 package com.teragrep.rlp_09;
+
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Iterator;
 
-public class RelpFlooderConfig {
-
-    private String target="127.0.0.1";
-    private int port=601;
-    private int threads=1;
-
-    public void setTarget(String target) {
-        this.target = target;
+public class ExampleRelpFlooderIterator implements Iterator<byte[]> {
+    private final byte[] record =
+            new SyslogMessage()
+                    .withTimestamp(Instant.now().toEpochMilli())
+                    .withAppName("rlp_09")
+                    .withHostname("localhost")
+                    .withFacility(Facility.USER)
+                    .withSeverity(Severity.INFORMATIONAL)
+                    .withMsg("Example rlo_09 event")
+                    .toRfc5424SyslogMessage()
+                    .getBytes(StandardCharsets.UTF_8);
+    @Override
+    public boolean hasNext() {
+        return true;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
-
-    public String getTarget() {
-        return target;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public int getThreads() {
-        return threads;
-    }
-
-    public RelpFlooderConfig() {
-    }
-
-    public RelpFlooderConfig(String target, int port, int threads) {
-        this.target = target;
-        this.port = port;
-        this.threads = threads;
+    @Override
+    public byte[] next() {
+        return record;
     }
 }

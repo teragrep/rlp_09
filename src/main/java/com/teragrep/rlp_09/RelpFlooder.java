@@ -89,16 +89,22 @@ public class RelpFlooder {
     }
 
     private final RelpFlooderConfig relpFlooderConfig;
+    private final RelpFlooderIteratorFactory iteratorFactory;
     public RelpFlooder() {
-        this(new RelpFlooderConfig());
+        this(new RelpFlooderConfig(), new ExampleRelpFlooderIteratorFactory());
     }
-    public RelpFlooder(RelpFlooderConfig relpFlooderConfig) {
+
+    public RelpFlooder(RelpFlooderConfig relpFlooderConfig){
+        this(relpFlooderConfig, new ExampleRelpFlooderIteratorFactory());
+    }
+    public RelpFlooder(RelpFlooderConfig relpFlooderConfig, RelpFlooderIteratorFactory iteratorFactory) {
         this.relpFlooderConfig = relpFlooderConfig;
+        this.iteratorFactory = iteratorFactory;
         this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.getThreads());
     }
     public void start()  {
         for (int i=0; i<relpFlooderConfig.getThreads(); i++) {
-            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig);
+            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i));
             relpFlooderTaskList.add(relpFlooderTask);
         }
         try {
