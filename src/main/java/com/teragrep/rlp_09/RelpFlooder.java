@@ -47,18 +47,29 @@
 package com.teragrep.rlp_09;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class RelpFlooder {
-    private final AtomicLong messagesSent = new AtomicLong();
     private final ExecutorService executorService;
-    private final AtomicBoolean stayRunning = new AtomicBoolean(true);
+    private boolean stayRunning = true;
+    List<RelpFlooderTask> relpFlooderTaskList = new ArrayList<>();
 
-    public Long getMessagesSent() {
-        return messagesSent.get();
+    public HashMap<Integer, Integer> getRecordsSentPerThread() {
+        HashMap<Integer, Integer> recordsSent = new HashMap<>();
+        for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
+            recordsSent.put(relpFlooderTask.getThreadId(), relpFlooderTask.getRecordsSent());
+        }
+        return recordsSent;
+    }
+
+    public int getTotalRecordsSent() {
+        int totalrecordsSent = 0;
+        for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
+            totalrecordsSent += relpFlooderTask.getRecordsSent();
+        }
+        return totalrecordsSent;
     }
 
     private final RelpFlooderConfig relpFlooderConfig;
@@ -70,9 +81,8 @@ public class RelpFlooder {
         this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.getThreads());
     }
     public void start()  {
-        List<RelpFlooderTask> relpFlooderTaskList = new ArrayList<>();
         for (int i=0; i<relpFlooderConfig.getThreads(); i++) {
-            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(relpFlooderConfig, messagesSent, stayRunning);
+            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig);
             relpFlooderTaskList.add(relpFlooderTask);
         }
         try {
@@ -81,12 +91,15 @@ public class RelpFlooder {
             throw new RuntimeException(e);
         }
         // Throw an exception if threads return and we haven't stopped properly
-        if(stayRunning.get()){
+        if(stayRunning){
             throw new RuntimeException("Execution of RelpFlooder failed");
         }
     }
 
     public void stop() {
-        stayRunning.set(false);
+        stayRunning=false;
+        for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
+            relpFlooderTask.stop();
+        }
     }
 }

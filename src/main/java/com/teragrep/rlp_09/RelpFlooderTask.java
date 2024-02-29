@@ -52,25 +52,23 @@ import com.teragrep.rlp_01.RelpConnection;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 class RelpFlooderTask implements Callable<Object> {
     private RelpConnection relpConnection = new RelpConnection();
-    private final AtomicLong messagesSent;
-    private final AtomicBoolean stayRunning;
+    private int recordsSent = 0;
+    private boolean stayRunning = true;
     private final RelpFlooderConfig relpFlooderConfig;
-    RelpFlooderTask(RelpFlooderConfig relpFlooderConfig, AtomicLong messagesSent, AtomicBoolean stayRunning) throws RuntimeException {
+    private final int threadId;
+    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig) throws RuntimeException {
+        this.threadId = threadId;
         this.relpFlooderConfig = relpFlooderConfig;
-        this.messagesSent = messagesSent;
-        this.stayRunning = stayRunning;
     }
 
     @Override
     public Object call() {
         relpConnection = new RelpConnection();
         connect();
-        while (stayRunning.get()) {
+        while (stayRunning) {
             RelpBatch relpBatch = new RelpBatch();
             for (int i = 1; i <= relpFlooderConfig.getBatchSize(); i++) {
                 relpBatch.insert(relpFlooderConfig.getMessage());
@@ -83,7 +81,7 @@ class RelpFlooderTask implements Callable<Object> {
             if (!relpBatch.verifyTransactionAll()) {
                 throw new RuntimeException("Can't verify transactions");
             }
-            messagesSent.addAndGet(relpFlooderConfig.getBatchSize());
+            recordsSent += relpFlooderConfig.getBatchSize();
         }
         disconnect();
         return null;
@@ -103,5 +101,15 @@ class RelpFlooderTask implements Callable<Object> {
         } catch (IOException | TimeoutException e) {
             throw new RuntimeException("Can't disconnect properly: ", e);
         }
+    }
+
+    public int getRecordsSent() {
+        return recordsSent;
+    }
+    public int getThreadId() {
+        return threadId;
+    }
+    public void stop() {
+        stayRunning=false;
     }
 }
