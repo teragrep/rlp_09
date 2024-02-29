@@ -98,8 +98,6 @@ public class RelpFlooder {
 
     public void stop() {
         stayRunning=false;
-        for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
-            relpFlooderTask.stop();
-        }
+        relpFlooderTaskList.parallelStream().forEach(RelpFlooderTask::stop);
     }
 }

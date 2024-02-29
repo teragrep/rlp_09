@@ -51,6 +51,8 @@ import com.teragrep.rlp_01.RelpConnection;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 class RelpFlooderTask implements Callable<Object> {
@@ -59,6 +61,7 @@ class RelpFlooderTask implements Callable<Object> {
     private boolean stayRunning = true;
     private final RelpFlooderConfig relpFlooderConfig;
     private final int threadId;
+    CountDownLatch latch = new CountDownLatch(1);
     RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig) throws RuntimeException {
         this.threadId = threadId;
         this.relpFlooderConfig = relpFlooderConfig;
@@ -84,6 +87,7 @@ class RelpFlooderTask implements Callable<Object> {
             recordsSent += relpFlooderConfig.getBatchSize();
         }
         disconnect();
+        latch.countDown();
         return null;
     }
 
@@ -109,7 +113,14 @@ class RelpFlooderTask implements Callable<Object> {
     public int getThreadId() {
         return threadId;
     }
-    public void stop() {
+    public void stop()  {
         stayRunning=false;
+        try {
+            if(!latch.await(5L, TimeUnit.SECONDS)) {
+                throw new RuntimeException("Timed out waiting for thread to shut down");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
