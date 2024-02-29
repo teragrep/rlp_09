@@ -63,8 +63,8 @@ public class RelpFlooderConfig {
     private boolean useTls = false;
     private int payloadSize = 10;
     private int batchSize = 1;
-    private byte[] message;
-    private int messageLength;
+    private byte[] record;
+    private int recordLength;
 
     public String getHostname() {
         return hostname;
@@ -72,7 +72,7 @@ public class RelpFlooderConfig {
 
     public void setHostname(String hostname) {
         this.hostname = hostname;
-        updateMessage();
+        updateRecord();
     }
 
     public String getAppname() {
@@ -81,7 +81,7 @@ public class RelpFlooderConfig {
 
     public void setAppname(String appname) {
         this.appname = appname;
-        updateMessage();
+        updateRecord();
     }
 
     public String getTarget() {
@@ -125,7 +125,7 @@ public class RelpFlooderConfig {
             throw new InvalidParameterException("Payload size must be a positive number");
         }
         this.payloadSize = payloadSize;
-        updateMessage();
+        updateRecord();
     }
 
     public int getBatchSize() {
@@ -139,16 +139,16 @@ public class RelpFlooderConfig {
         this.batchSize = batchSize;
     }
 
-    public byte[] getMessage() {
-        return message;
+    public byte[] getRecord() {
+        return record;
     }
 
-    public int getMessageLength() {
-        return messageLength;
+    public int getRecordLength() {
+        return recordLength;
     }
 
     public RelpFlooderConfig() {
-        updateMessage();
+        updateRecord();
     }
 
     public RelpFlooderConfig(String hostname, String appname, String target, int port, int threads, boolean useTls, int payloadSize, int batchSize) {
@@ -160,11 +160,11 @@ public class RelpFlooderConfig {
         setUseTls(useTls);
         setPayloadSize(payloadSize);
         setBatchSize(batchSize);
-        updateMessage();
+        updateRecord();
     }
 
-    private void updateMessage() {
-        this.message = new SyslogMessage()
+    private void updateRecord() {
+        this.record = new SyslogMessage()
                 .withTimestamp(Instant.now().toEpochMilli())
                 .withAppName(this.appname)
                 .withHostname(this.hostname)
@@ -173,6 +173,6 @@ public class RelpFlooderConfig {
                 .withMsg(new String(new char[this.payloadSize]).replace("\0", "X"))
                 .toRfc5424SyslogMessage()
                 .getBytes(StandardCharsets.UTF_8);
-        this.messageLength = message.length;
+        this.recordLength = record.length;
     }
 }

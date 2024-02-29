@@ -58,6 +58,7 @@ import java.util.concurrent.TimeoutException;
 class RelpFlooderTask implements Callable<Object> {
     private RelpConnection relpConnection = new RelpConnection();
     private int recordsSent = 0;
+    private int bytesSent = 0;
     private boolean stayRunning = true;
     private final RelpFlooderConfig relpFlooderConfig;
     private final int threadId;
@@ -74,7 +75,7 @@ class RelpFlooderTask implements Callable<Object> {
         while (stayRunning) {
             RelpBatch relpBatch = new RelpBatch();
             for (int i = 1; i <= relpFlooderConfig.getBatchSize(); i++) {
-                relpBatch.insert(relpFlooderConfig.getMessage());
+                relpBatch.insert(relpFlooderConfig.getRecord());
             }
             try {
                 relpConnection.commit(relpBatch);
@@ -85,6 +86,7 @@ class RelpFlooderTask implements Callable<Object> {
                 throw new RuntimeException("Can't verify transactions");
             }
             recordsSent += relpFlooderConfig.getBatchSize();
+            bytesSent += relpFlooderConfig.getRecordLength();
         }
         disconnect();
         latch.countDown();
@@ -109,6 +111,9 @@ class RelpFlooderTask implements Callable<Object> {
 
     public int getRecordsSent() {
         return recordsSent;
+    }
+    public int getBytesSent() {
+        return bytesSent;
     }
     public int getThreadId() {
         return threadId;

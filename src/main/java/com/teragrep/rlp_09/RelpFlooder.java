@@ -72,6 +72,22 @@ public class RelpFlooder {
         return totalrecordsSent;
     }
 
+    public HashMap<Integer, Integer> getTotalBytesSentPerThread() {
+        HashMap<Integer, Integer> bytesSent = new HashMap<>();
+        for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
+            bytesSent.put(relpFlooderTask.getThreadId(), relpFlooderTask.getBytesSent());
+        }
+        return bytesSent;
+    }
+
+    public int getTotalBytesSent() {
+        int totalBytesSent = 0;
+        for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
+            totalBytesSent += relpFlooderTask.getBytesSent();
+        }
+        return totalBytesSent;
+    }
+
     private final RelpFlooderConfig relpFlooderConfig;
     public RelpFlooder() {
         this(new RelpFlooderConfig());

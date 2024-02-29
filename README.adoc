@@ -13,7 +13,7 @@ Simple but scalable RELP flooder library
 - Limited usability outside specific testing situations
 - No structured data support yet
 - No TLS support yet
-- No customizable message support yet
+- No customizable record support yet
 - Supports only RFC5424
 
 == How to use
@@ -32,8 +32,8 @@ RelpFlooder relpFlooder = new RelpFlooder();
 relpFlooder.start();
 relpFlooder.stop();
 
-// Get total messages count
-relpFlooder.getMessagesSent();
+// Get total record count
+relpFlooder.getRecordsSent();
 ----
 
 == Configurations
@@ -49,7 +49,7 @@ relpFlooder.getMessagesSent();
 |port|setPort(int port)|1601|RELP target port
 |threads|setThreads(int threads)|4|RELP Flooder thread count
 |useTls|setUseTls(boolean useTls)|false|Is TLS used for connections
-|payloadSize|setPayloadSize(int payloadSize)|10|Event message payload size (excludes any headers)
+|payloadSize|setPayloadSize(int payloadSize)|10|Record payload size (excludes any headers)
 |batchSize|setBatchSize(int batchSize)|1|How many events is sent in one batch
 
 |===
