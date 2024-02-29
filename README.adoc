@@ -32,8 +32,13 @@ RelpFlooder relpFlooder = new RelpFlooder();
 relpFlooder.start();
 relpFlooder.stop();
 
-// Get total record count
-relpFlooder.getRecordsSent();
+// Get total records and bytes sent
+LOGGER.info("Sent <{}> records", relpFlooder.getTotalRecordsSent());
+LOGGER.info("Sent <{}> bytes", relpFlooder.getTotalBytesSent());
+
+// Get total records and bytes sent per thread;
+LOGGER.info("Sent <{}> records per thread", relpFlooder.getRecordsSentPerThread());
+LOGGER.info("Sent <{}> bytes per thread", relpFlooder.getTotalBytesSentPerThread());
 ----
 
 == Configurations
