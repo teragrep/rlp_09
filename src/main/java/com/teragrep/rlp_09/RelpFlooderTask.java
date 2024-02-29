@@ -75,7 +75,7 @@ class RelpFlooderTask implements Callable<Object> {
     public Object call() {
         relpConnection = new RelpConnection();
         connect();
-        while (stayRunning) {
+        while (stayRunning && iterator.hasNext()) {
             byte[] message = iterator.next();
             RelpBatch relpBatch = new RelpBatch();
             relpBatch.insert(message);
