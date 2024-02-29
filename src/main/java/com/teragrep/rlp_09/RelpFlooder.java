@@ -49,7 +49,8 @@ package com.teragrep.rlp_09;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RelpFlooder {
     private final ExecutorService executorService;

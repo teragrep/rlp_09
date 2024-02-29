@@ -45,12 +45,6 @@
  */
 
 package com.teragrep.rlp_09;
-import com.teragrep.rlo_14.Facility;
-import com.teragrep.rlo_14.Severity;
-import com.teragrep.rlo_14.SyslogMessage;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 
 public class RelpFlooderConfig {
 
