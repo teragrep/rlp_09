@@ -109,17 +109,12 @@ public class RelpFlooder {
             RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i));
             relpFlooderTaskList.add(relpFlooderTask);
         }
-        List<Future<Object>> futures;
         try {
-             futures = executorService.invokeAll(relpFlooderTaskList);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        try {
+            List<Future<Object>> futures = executorService.invokeAll(relpFlooderTaskList);
             for(Future<Object> future : futures) {
                 future.get();
             }
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
