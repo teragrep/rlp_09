@@ -45,134 +45,78 @@
  */
 
 package com.teragrep.rlp_09;
-
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
 
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidParameterException;
 import java.time.Instant;
 
 public class RelpFlooderConfig {
-    private String hostname = "localhost";
-    private String appname = "rlp_09";
-    private String target = "127.0.0.1";
-    private int port = 601;
-    private int threads = 1;
-    private boolean useTls = false;
-    private int payloadSize = 10;
-    private int batchSize = 1;
-    private byte[] record;
-    private int recordLength;
 
-    public String getHostname() {
-        return hostname;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-        updateRecord();
-    }
-
-    public String getAppname() {
-        return appname;
-    }
-
-    public void setAppname(String appname) {
-        this.appname = appname;
-        updateRecord();
-    }
-
-    public String getTarget() {
-        return target;
-    }
+    private String target="127.0.0.1";
+    private int port=601;
+    private byte[] record =
+            new SyslogMessage()
+            .withTimestamp(Instant.now().toEpochMilli())
+            .withAppName("rlp_09")
+            .withHostname("localhost")
+            .withFacility(Facility.USER)
+            .withSeverity(Severity.INFORMATIONAL)
+            .withMsg(new String(new char[10]).replace("\0", "X"))
+            .toRfc5424SyslogMessage()
+            .getBytes(StandardCharsets.UTF_8);
+    private int threads=1;
 
     public void setTarget(String target) {
         this.target = target;
-    }
-
-    public int getPort() {
-        return port;
     }
 
     public void setPort(int port) {
         this.port = port;
     }
 
-    public int getThreads() {
-        return threads;
+    public void setRecord(byte[] record) {
+        this.record = record;
     }
 
     public void setThreads(int threads) {
         this.threads = threads;
     }
 
-    public boolean isUseTls() {
-        return useTls;
+    public String getTarget() {
+        return target;
     }
 
-    public void setUseTls(boolean useTls) {
-        this.useTls = useTls;
-    }
-
-    public int getPayloadSize() {
-        return payloadSize;
-    }
-
-    public void setPayloadSize(int payloadSize) {
-        if(payloadSize < 0) {
-            throw new InvalidParameterException("Payload size must be a positive number");
-        }
-        this.payloadSize = payloadSize;
-        updateRecord();
-    }
-
-    public int getBatchSize() {
-        return batchSize;
-    }
-
-    public void setBatchSize(int batchSize) {
-        if(batchSize <= 0 || batchSize > 4096) {
-            throw new RuntimeException("Batch size must be between 1 and 4096");
-        }
-        this.batchSize = batchSize;
+    public int getPort() {
+        return port;
     }
 
     public byte[] getRecord() {
         return record;
     }
 
+    public int getThreads() {
+        return threads;
+    }
+
     public int getRecordLength() {
-        return recordLength;
+        return record.length;
     }
 
     public RelpFlooderConfig() {
-        updateRecord();
+    }
+    public RelpFlooderConfig(byte[] record) {
+        this.record = record;
+    }
+    public RelpFlooderConfig(String record) {
+        this.record = record.getBytes(StandardCharsets.UTF_8);
     }
 
-    public RelpFlooderConfig(String hostname, String appname, String target, int port, int threads, boolean useTls, int payloadSize, int batchSize) {
-        setHostname(hostname);
-        setAppname(appname);
-        setTarget(target);
-        setPort(port);
-        setThreads(threads);
-        setUseTls(useTls);
-        setPayloadSize(payloadSize);
-        setBatchSize(batchSize);
-        updateRecord();
-    }
-
-    private void updateRecord() {
-        this.record = new SyslogMessage()
-                .withTimestamp(Instant.now().toEpochMilli())
-                .withAppName(this.appname)
-                .withHostname(this.hostname)
-                .withFacility(Facility.USER)
-                .withSeverity(Severity.INFORMATIONAL)
-                .withMsg(new String(new char[this.payloadSize]).replace("\0", "X"))
-                .toRfc5424SyslogMessage()
-                .getBytes(StandardCharsets.UTF_8);
-        this.recordLength = record.length;
+    public RelpFlooderConfig(String target, int port, String record, int threads) {
+        this.target = target;
+        this.port = port;
+        this.record = record.getBytes(StandardCharsets.UTF_8);
+        this.threads = threads;
     }
 }

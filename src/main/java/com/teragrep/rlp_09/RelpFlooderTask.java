@@ -74,9 +74,7 @@ class RelpFlooderTask implements Callable<Object> {
         connect();
         while (stayRunning) {
             RelpBatch relpBatch = new RelpBatch();
-            for (int i = 1; i <= relpFlooderConfig.getBatchSize(); i++) {
-                relpBatch.insert(relpFlooderConfig.getRecord());
-            }
+            relpBatch.insert(relpFlooderConfig.getRecord());
             try {
                 relpConnection.commit(relpBatch);
             } catch (IOException | TimeoutException e) {
@@ -85,7 +83,7 @@ class RelpFlooderTask implements Callable<Object> {
             if (!relpBatch.verifyTransactionAll()) {
                 throw new RuntimeException("Can't verify transactions");
             }
-            recordsSent += relpFlooderConfig.getBatchSize();
+            recordsSent++;
             bytesSent += relpFlooderConfig.getRecordLength();
         }
         disconnect();

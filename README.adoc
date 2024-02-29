@@ -11,24 +11,30 @@ Simple but scalable RELP flooder library
 
 - Minimal failure tolerance, mostly meant for testing
 - Limited usability outside specific testing situations
-- No structured data support yet
+- Supports only one record per RELP batch
+- Doesn't support dynamic message modification
 - No TLS support yet
-- No customizable record support yet
-- Supports only RFC5424
 
 == How to use
 
 [sourcecode,java]
 ----
-// Custom config, for rest see Configurations
-RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig();
-relpFlooderConfig.setAppname("different_appname");
-RelpFlooder relpFlooder = new RelpFlooder(relpFlooderConfig);
-relpFlooder.start();
-relpFlooder.stop();
-
 // All defaults
-RelpFlooder relpFlooder = new RelpFlooder();
+RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig();
+
+// All defaults except record
+RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig(record);
+
+// Set all settings
+RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig(target, port, record, threads);
+
+// Alternatively use setters
+RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig();
+relpFlooderConfig.setRecord("example record");
+relpFlooderConfig.setTarget("127.0.0.1");
+
+// And use
+RelpFlooder relpFlooder = new RelpFlooder(relpFlooderConfig);
 relpFlooder.start();
 relpFlooder.stop();
 
@@ -43,19 +49,15 @@ LOGGER.info("Sent <{}> bytes per thread", relpFlooder.getTotalBytesSentPerThread
 
 == Configurations
 
-
 [cols="4"]
 |===
 |Configuration key|Setter|Default value|Usage
 
-|hostname|setHostname(String hostname)|localhost|Sets hostname for the event
-|appname|setAppname(String appname)|rlp_09|Sets used appname for the event
-|target|setTarget(String target)|127.0.0.1|RELP target server
-|port|setPort(int port)|1601|RELP target port
-|threads|setThreads(int threads)|4|RELP Flooder thread count
-|useTls|setUseTls(boolean useTls)|false|Is TLS used for connections
-|payloadSize|setPayloadSize(int payloadSize)|10|Record payload size (excludes any headers)
-|batchSize|setBatchSize(int batchSize)|1|How many events is sent in one batch
+|target|setTarget(String target)|127.0.0.1|Sets RELP target
+|port|setPort(int port)|601|Sets RELP port
+|record|setRecord(String record)|<snip>|Set record as string
+|record|setRecord(byte[] record)|<snip>|Set record as bytearray
+|threads|setThreads(int threads)|1|Flooder thread count
 
 |===
 
