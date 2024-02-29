@@ -49,12 +49,13 @@ package com.teragrep.rlp_09;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class RelpFlooder {
     private final ExecutorService executorService;
-    private boolean stayRunning = true;
     List<RelpFlooderTask> relpFlooderTaskList = new ArrayList<>();
 
     public HashMap<Integer, Integer> getRecordsSentPerThread() {
@@ -108,19 +109,22 @@ public class RelpFlooder {
             RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i));
             relpFlooderTaskList.add(relpFlooderTask);
         }
+        List<Future<Object>> futures;
         try {
-            executorService.invokeAll(relpFlooderTaskList);
+             futures = executorService.invokeAll(relpFlooderTaskList);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        // Throw an exception if threads return and we haven't stopped properly
-        if(stayRunning){
-            throw new RuntimeException("Execution of RelpFlooder failed");
+        try {
+            for(Future<Object> future : futures) {
+                future.get();
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
     }
 
     public void stop() {
-        stayRunning=false;
         relpFlooderTaskList.parallelStream().forEach(RelpFlooderTask::stop);
     }
 }

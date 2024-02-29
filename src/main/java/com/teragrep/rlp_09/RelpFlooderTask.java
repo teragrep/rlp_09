@@ -82,7 +82,7 @@ class RelpFlooderTask implements Callable<Object> {
             try {
                 relpConnection.commit(relpBatch);
             } catch (IOException | TimeoutException e) {
-                throw new RuntimeException("Can't commit batch: ", e);
+                throw new RuntimeException("Can't commit batch: " + e.getMessage());
             }
             if (!relpBatch.verifyTransactionAll()) {
                 throw new RuntimeException("Can't verify transactions");
@@ -99,7 +99,7 @@ class RelpFlooderTask implements Callable<Object> {
         try {
             relpConnection.connect(relpFlooderConfig.getTarget(), relpFlooderConfig.getPort());
         } catch (IOException | TimeoutException e) {
-            throw new RuntimeException("Can't connect properly: ", e);
+            throw new RuntimeException("Can't connect properly: " + e.getMessage());
         }
     }
 
