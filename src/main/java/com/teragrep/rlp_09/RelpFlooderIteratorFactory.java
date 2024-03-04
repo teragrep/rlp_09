@@ -48,5 +48,5 @@ package com.teragrep.rlp_09;
 
 import java.util.Iterator;
 public interface RelpFlooderIteratorFactory {
-    public Iterator<byte[]> get(int threadId);
+    public Iterator<byte[]> get(Object config);
 }
