@@ -50,7 +50,7 @@ import java.util.Iterator;
 
 public class ExampleRelpFlooderIteratorFactory implements RelpFlooderIteratorFactory {
     @Override
-    public Iterator<byte[]> get(Object config) {
+    public Iterator<byte[]> get(int threadId) {
         return new ExampleRelpFlooderIterator();
     }
 }
