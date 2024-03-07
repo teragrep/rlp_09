@@ -1,5 +1,5 @@
 /*
- * Teragrep RELP Flooder RLP_09
+ * Teragrep RELP Flooder Library RLP_09
  * Copyright (C) 2024  Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
@@ -50,66 +50,84 @@ import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.RelpConnection;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 
-class RelpThread implements Runnable {
-    private boolean stayRunning = true;
+class RelpFlooderTask implements Callable<Object> {
     private RelpConnection relpConnection = new RelpConnection();
-    private final String name;
-    private final AtomicLong messagesSent;
-    private final RelpConfig relpConfig;
-    RelpThread(String name, RelpConfig relpConfig, AtomicLong messagesSent) {
-        this.name = name;
-        this.relpConfig = relpConfig;
-        this.messagesSent = messagesSent;
+    private int recordsSent = 0;
+    private int bytesSent = 0;
+    private boolean stayRunning = true;
+    private final RelpFlooderConfig relpFlooderConfig;
+    private final int threadId;
+    private final CountDownLatch latch = new CountDownLatch(1);
+    private final Iterator<byte[]> iterator;
+    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig, Iterator<byte[]> iterator) throws RuntimeException {
+        this.threadId = threadId;
+        this.iterator = iterator;
+        this.relpFlooderConfig = relpFlooderConfig;
     }
+
     @Override
-    public void run() {
+    public Object call() {
         relpConnection = new RelpConnection();
         connect();
-        while(stayRunning) {
+        while (stayRunning && iterator.hasNext()) {
+            byte[] message = iterator.next();
             RelpBatch relpBatch = new RelpBatch();
-            for(int i=1; i<=relpConfig.batchSize; i++) {
-                relpBatch.insert(relpConfig.message);
+            relpBatch.insert(message);
+            try {
+                relpConnection.commit(relpBatch);
+            } catch (IOException | TimeoutException e) {
+                throw new RuntimeException("Can't commit batch: " + e.getMessage());
             }
-            boolean notSent = true;
-            while (notSent) {
-                try {
-                    relpConnection.commit(relpBatch);
-                } catch (IllegalStateException e) {
-                    System.out.printf("[%s] Failed to send message: %s", name, e.getMessage());
-                    System.exit(1);
-                } catch (IOException | TimeoutException e) {
-                    System.out.printf("[%s] Failed to commit: %s%n", name, e.getMessage());
-                    System.exit(1);
-                }
-                if (!relpBatch.verifyTransactionAll()) {
-                    System.out.printf("[%s] Failed to send message%n", name);
-                    relpBatch.retryAllFailed();
-                    relpConnection.tearDown();
-                } else {
-                    notSent = false;
-                }
+            if (!relpBatch.verifyTransactionAll()) {
+                throw new RuntimeException("Can't verify transactions");
             }
-            messagesSent.addAndGet(relpConfig.batchSize);
+            recordsSent++;
+            bytesSent += message.length;
         }
-        try {
-            relpConnection.disconnect();
-        } catch (IOException | TimeoutException e) {
-            System.out.printf("[%s] Failed to disconnect from the server%n", name);
-        }
+        disconnect();
+        latch.countDown();
+        return null;
     }
 
     public void connect() {
         try {
-            relpConnection.connect(relpConfig.target, relpConfig.port);
+            relpConnection.connect(relpFlooderConfig.getTarget(), relpFlooderConfig.getPort());
         } catch (IOException | TimeoutException e) {
-            System.out.printf("[%s] Failed to connect to the server%n", name);
-            System.exit(1);
+            throw new RuntimeException("Can't connect properly: " + e.getMessage());
         }
     }
-    public void shutdown() {
-        stayRunning = false;
+
+    public void disconnect() {
+        try {
+            relpConnection.disconnect();
+        } catch (IOException | TimeoutException e) {
+            throw new RuntimeException("Can't disconnect properly: ", e);
+        }
+    }
+
+    public int getRecordsSent() {
+        return recordsSent;
+    }
+    public int getBytesSent() {
+        return bytesSent;
+    }
+    public int getThreadId() {
+        return threadId;
+    }
+    public void stop()  {
+        stayRunning=false;
+        try {
+            if(!latch.await(5L, TimeUnit.SECONDS)) {
+                throw new RuntimeException("Timed out waiting for thread to shut down");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

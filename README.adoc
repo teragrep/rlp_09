@@ -1,48 +1,68 @@
-# RELP Flooder rlp_09
+= RELP Flooder library rlp_09
 
-Simple but scalable RELP flooder
+Simple but scalable RELP flooder library
 
-## Features
+== Features
 
-- Simple to set up
 - Simple to use
-- Gives statistics
 - Scales to as many threads as wanted
+- Supports user-supplied record providers to make dynamic content
 
-## Limitations
+== Limitations
 
-- No structured data support yet
+- Minimal failure tolerance, mostly meant for testing
+- Limited usability outside specific testing situations
+- Supports only one record per RELP batch
 - No TLS support yet
-- No customizable message support yet
-- Supports only RFC5424
 
-## How to compile
+== How to use
 
-`mvn clean package`
+[sourcecode,java]
+----
+// Set all settings
+RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig(target, port, record, threads);
 
-## How to run
+// Alternatively use setters
+RelpFlooderConfig relpFlooderConfig = new RelpFlooderConfig();
+relpFlooderConfig.setTarget("127.0.0.1");
+relpFlooderConfig.setPort(601);
+relpFlooderConfig.setThreads(4);
 
-`java -jar rlp_09.jar`
+// Provide config and Iterator<byte[]> provider to RelpFlooder, here is example implementation
+ExampleRelpFlooderIteratorFactory exampleRelpFlooderIteratorFactory = new ExampleRelpFlooderIteratorFactory();
+RelpFlooder relpFlooder = new RelpFlooder(relpFlooderConfig, exampleRelpFlooderIteratorFactory);
+relpFlooder.start();
+relpFlooder.stop();
 
-## Configurations
+// Get total records and bytes sent
+LOGGER.info("Sent <{}> records", relpFlooder.getTotalRecordsSent());
+LOGGER.info("Sent <{}> bytes", relpFlooder.getTotalBytesSent());
 
+// Get total records and bytes sent per thread;
+LOGGER.info("Sent <{}> records per thread", relpFlooder.getRecordsSentPerThread());
+LOGGER.info("Sent <{}> bytes per thread", relpFlooder.getTotalBytesSentPerThread());
+----
 
-[cols="3"]
+Example Iterator will send only static records like as
+
+[source,sh]
+----
+<14>1 2024-02-29T13:58:05.605Z localhost rlp_09 - - - Example rlo_09 event
+----
+
+== Configurations
+
+[cols="4"]
 |===
-|System property|Default value|Usage
+|Configuration key|Setter|Default value|Usage
 
-|hostname|localhost|Sets hostname for the event
-|appname|rlp_09|Sets used appname for the event
-|target|127.0.0.1|RELP target server
-|port|1601|RELP target port
-|threads|4|RELP Flooder thread count
-|useTls|false|Is TLS used for connections
-|payloadSize|10|Event message payload size (excludes any headers)
-|batchSize|1|How many events is sent in one batch
+|target|setTarget(String target)|127.0.0.1|Sets RELP target
+|port|setPort(int port)|601|Sets RELP port
+|threads|setThreads(int threads)|1|Flooder thread count
 
 |===
 
-## Contributing
+== Contributing
 
 You can involve yourself with our project by https://github.com/teragrep/rlp_09/issues/new/choose[opening an issue] or submitting a pull request.
 
@@ -55,8 +75,9 @@ Contribution requirements:
 
 Read more in our https://github.com/teragrep/teragrep/blob/main/contributing.adoc[Contributing Guideline].
 
-### Contributor License Agreement
+=== Contributor License Agreement
 
 Contributors must sign https://github.com/teragrep/teragrep/blob/main/cla.adoc[Teragrep Contributor License Agreement] before a pull request is accepted to organization's repositories.
 
 You need to submit the CLA only once. After submitting the CLA you can contribute to all Teragrep's repositories.
+----

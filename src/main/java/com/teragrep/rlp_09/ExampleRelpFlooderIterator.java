@@ -1,5 +1,5 @@
 /*
- * Teragrep RELP Flooder RLP_09
+ * Teragrep RELP Flooder Library RLP_09
  * Copyright (C) 2024  Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
@@ -46,17 +46,32 @@
 
 package com.teragrep.rlp_09;
 
-public class Main {
-    public static void main(String[] args) {
-        RelpConfig relpConfig = new RelpConfig();
-        System.out.printf("Using hostname <[%s]>%n", relpConfig.hostname);
-        System.out.printf("Using appname <[%s]>%n", relpConfig.appname);
-        System.out.printf("Adding <[%s]> characters to payload size making total event size <%s>%n", relpConfig.payloadSize, relpConfig.messageLength);
-        System.out.printf("Sending <[%s]> messages per batch%n", relpConfig.batchSize);
-        System.out.printf("Sending messages to: <[%s]:[%s]>%n", relpConfig.target, relpConfig.port);
-        System.out.printf("TLS enabled (FIXME: Implement): <[%s]>%n", relpConfig.useTls);
+import com.teragrep.rlo_14.Facility;
+import com.teragrep.rlo_14.Severity;
+import com.teragrep.rlo_14.SyslogMessage;
 
-        RelpFlooder relpFlooder = new RelpFlooder(relpConfig);
-        relpFlooder.start();
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Iterator;
+
+public class ExampleRelpFlooderIterator implements Iterator<byte[]> {
+    private final byte[] record =
+            new SyslogMessage()
+                    .withTimestamp(Instant.now().toEpochMilli())
+                    .withAppName("rlp_09")
+                    .withHostname("localhost")
+                    .withFacility(Facility.USER)
+                    .withSeverity(Severity.INFORMATIONAL)
+                    .withMsg("Example rlo_09 event")
+                    .toRfc5424SyslogMessage()
+                    .getBytes(StandardCharsets.UTF_8);
+    @Override
+    public boolean hasNext() {
+        return true;
+    }
+
+    @Override
+    public byte[] next() {
+        return record;
     }
 }
