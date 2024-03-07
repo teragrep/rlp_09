@@ -13,7 +13,6 @@
     <revision>0.0.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <sha1/>
-    <env.GITHUB_REPOSITORY>INVALID_GITHUB_REPOSITORY</env.GITHUB_REPOSITORY>
     <rlp_01.version>4.0.1</rlp_01.version>
   </properties>
   <dependencies>
@@ -181,7 +180,7 @@
         <repository>
           <id>github</id>
           <name>GitHub Packages</name>
-          <url>https://maven.pkg.github.com/${env.GITHUB_REPOSITORY}</url>
+          <url>https://maven.pkg.github.com/teragrep/rlp_09</url>
         </repository>
       </distributionManagement>
     </profile>
