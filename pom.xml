@@ -5,6 +5,8 @@
   <version>${revision}${sha1}${changelist}</version>
   <packaging>jar</packaging>
   <name>rlp_09</name>
+  <description>A RELP flooder library.</description>
+  <url>https://teragrep.com</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>8</maven.compiler.source>
