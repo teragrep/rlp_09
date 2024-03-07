@@ -15,6 +15,25 @@
     <sha1/>
     <rlp_01.version>4.0.1</rlp_01.version>
   </properties>
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License v3.0</name>
+      <url>https://www.gnu.org/licenses/agpl-3.0.txt</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>StrongestNumber9</name>
+      <email>9@teragrep.com</email>
+      <organization>Teragrep</organization>
+      <organizationUrl>https://teragrep.com</organizationUrl>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:https://github.com/teragrep/rlp_09.git</connection>
+    <developerConnection>scm:git:git@github.com:teragrep/rlp_09.git</developerConnection>
+    <url>https://github.com/teragrep/rlp_09/tree/master</url>
+  </scm>
   <dependencies>
     <!-- RELP -->
     <dependency>
