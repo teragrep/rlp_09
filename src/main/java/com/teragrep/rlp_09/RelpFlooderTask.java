@@ -57,6 +57,7 @@ import com.teragrep.rlp_03.frame.RelpFrame;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.concurrent.*;
 
@@ -110,6 +111,7 @@ class RelpFlooderTask implements Callable<Object> {
                 recordsSent++;
                 bytesSent += record.length;
             }
+            client.transmit("close", "".getBytes(StandardCharsets.UTF_8));
         } catch (RuntimeException | InterruptedException | TimeoutException | ExecutionException e) {
             throw new RuntimeException("Failed to run flooder: " + e.getMessage());
         }
