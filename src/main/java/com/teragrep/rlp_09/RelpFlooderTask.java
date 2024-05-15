@@ -46,20 +46,23 @@
 
 package com.teragrep.rlp_09;
 
-import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_03.channel.context.ConnectContextFactory;
+import com.teragrep.rlp_03.channel.socket.PlainFactory;
+import com.teragrep.rlp_03.channel.socket.SocketFactory;
+import com.teragrep.rlp_03.client.Client;
+import com.teragrep.rlp_03.client.ClientFactory;
+import com.teragrep.rlp_03.eventloop.EventLoop;
+import com.teragrep.rlp_03.eventloop.EventLoopFactory;
+import com.teragrep.rlp_03.frame.RelpFrame;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Iterator;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 class RelpFlooderTask implements Callable<Object> {
-    private RelpConnection relpConnection = new RelpConnection();
-    private int recordsSent = 0;
-    private int bytesSent = 0;
+    private long recordsSent = 0;
+    private long bytesSent = 0;
     private boolean stayRunning = true;
     private final RelpFlooderConfig relpFlooderConfig;
     private final int threadId;
@@ -73,48 +76,53 @@ class RelpFlooderTask implements Callable<Object> {
 
     @Override
     public Object call() {
-        relpConnection = new RelpConnection();
-        connect();
-        while (stayRunning && iterator.hasNext()) {
-            byte[] message = iterator.next();
-            RelpBatch relpBatch = new RelpBatch();
-            relpBatch.insert(message);
-            try {
-                relpConnection.commit(relpBatch);
-            } catch (IOException | TimeoutException e) {
-                throw new RuntimeException("Can't commit batch: " + e.getMessage());
-            }
-            if (!relpBatch.verifyTransactionAll()) {
-                throw new RuntimeException("Can't verify transactions");
-            }
-            recordsSent++;
-            bytesSent += message.length;
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        SocketFactory socketFactory = new PlainFactory();
+        ConnectContextFactory connectContextFactory = new ConnectContextFactory(executorService, socketFactory);
+        EventLoopFactory eventLoopFactory = new EventLoopFactory();
+        EventLoop eventLoop;
+        try {
+            eventLoop = eventLoopFactory.create();
+        } catch (IOException e) {
+            throw new RuntimeException("Can't create EventLoop: " + e.getMessage());
         }
-        disconnect();
+        Thread eventLoopThread = new Thread(eventLoop);
+        eventLoopThread.start();
+        ClientFactory clientFactory = new ClientFactory(connectContextFactory, eventLoop);
+        try (Client client = clientFactory.open(new InetSocketAddress(relpFlooderConfig.getTarget(), relpFlooderConfig.getPort())).get(relpFlooderConfig.getConnectTimeout(), TimeUnit.SECONDS)) {
+            CompletableFuture<RelpFrame> open = client.transmit("open", "rlp_09 says hi".getBytes());
+            try (RelpFrame openResponse = open.get()) {
+                if(!openResponse.payload().toString().startsWith("200 OK")) {
+                    throw new RuntimeException("Got unexpected response when opening connection: " + openResponse.payload().toString());
+                }
+            }
+
+            while (stayRunning && iterator.hasNext()) {
+                byte[] record = iterator.next();
+                CompletableFuture<RelpFrame> syslog = client.transmit("syslog", record);
+                if(relpFlooderConfig.getWaitForAcks()) {
+                    try (RelpFrame syslogResponse = syslog.get()) {
+                        if (syslogResponse.payload().toString().equals("200 OK\n")) {
+                            throw new RuntimeException("Got unexpected when sending records: " + syslogResponse.payload().toString());
+                        }
+                    }
+                }
+                recordsSent++;
+                bytesSent += record.length;
+            }
+        } catch (RuntimeException | InterruptedException | TimeoutException | ExecutionException e) {
+            throw new RuntimeException("Failed to run flooder: " + e.getMessage());
+        }
+        eventLoop.stop();
+        executorService.shutdown();
         latch.countDown();
         return null;
     }
 
-    public void connect() {
-        try {
-            relpConnection.connect(relpFlooderConfig.getTarget(), relpFlooderConfig.getPort());
-        } catch (IOException | TimeoutException e) {
-            throw new RuntimeException("Can't connect properly: " + e.getMessage());
-        }
-    }
-
-    public void disconnect() {
-        try {
-            relpConnection.disconnect();
-        } catch (IOException | TimeoutException e) {
-            throw new RuntimeException("Can't disconnect properly: ", e);
-        }
-    }
-
-    public int getRecordsSent() {
+    public long getRecordsSent() {
         return recordsSent;
     }
-    public int getBytesSent() {
+    public long getBytesSent() {
         return bytesSent;
     }
     public int getThreadId() {

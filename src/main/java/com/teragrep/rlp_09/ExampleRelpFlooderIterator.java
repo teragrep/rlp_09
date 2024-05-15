@@ -62,7 +62,7 @@ public class ExampleRelpFlooderIterator implements Iterator<byte[]> {
                     .withHostname("localhost")
                     .withFacility(Facility.USER)
                     .withSeverity(Severity.INFORMATIONAL)
-                    .withMsg("Example rlo_09 event")
+                    .withMsg("Example rlo_09 record")
                     .toRfc5424SyslogMessage()
                     .getBytes(StandardCharsets.UTF_8);
     @Override

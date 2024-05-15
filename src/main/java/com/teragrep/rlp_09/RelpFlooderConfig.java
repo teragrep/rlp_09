@@ -51,6 +51,9 @@ public class RelpFlooderConfig {
     private String target="127.0.0.1";
     private int port=601;
     private int threads=1;
+    private int connectTimeout=1;
+
+    private boolean waitForAcks=true;
 
     public void setTarget(String target) {
         this.target = target;
@@ -62,6 +65,12 @@ public class RelpFlooderConfig {
 
     public void setThreads(int threads) {
         this.threads = threads;
+    }
+    public void setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
+    }
+    public void setWaitForAcks(boolean waitForAcks) {
+        this.waitForAcks = waitForAcks;
     }
 
     public String getTarget() {
@@ -76,12 +85,23 @@ public class RelpFlooderConfig {
         return threads;
     }
 
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public boolean getWaitForAcks() {
+        return waitForAcks;
+    }
+
     public RelpFlooderConfig() {
     }
 
-    public RelpFlooderConfig(String target, int port, int threads) {
+    public RelpFlooderConfig(String target, int port, int threads, int connectTimeout, boolean waitForAcks) {
         this.target = target;
         this.port = port;
         this.threads = threads;
+        this.connectTimeout = connectTimeout;
+        this.waitForAcks = waitForAcks;
     }
+
 }

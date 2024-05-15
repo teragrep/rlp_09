@@ -49,7 +49,6 @@ package com.teragrep.rlp_09;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -58,32 +57,32 @@ public class RelpFlooder {
     private final ExecutorService executorService;
     List<RelpFlooderTask> relpFlooderTaskList = new ArrayList<>();
 
-    public HashMap<Integer, Integer> getRecordsSentPerThread() {
-        HashMap<Integer, Integer> recordsSent = new HashMap<>();
+    public HashMap<Integer, Long> getRecordsSentPerThread() {
+        HashMap<Integer, Long> recordsSent = new HashMap<>();
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             recordsSent.put(relpFlooderTask.getThreadId(), relpFlooderTask.getRecordsSent());
         }
         return recordsSent;
     }
 
-    public int getTotalRecordsSent() {
-        int totalrecordsSent = 0;
+    public long getTotalRecordsSent() {
+        long totalrecordsSent = 0;
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             totalrecordsSent += relpFlooderTask.getRecordsSent();
         }
         return totalrecordsSent;
     }
 
-    public HashMap<Integer, Integer> getTotalBytesSentPerThread() {
-        HashMap<Integer, Integer> bytesSent = new HashMap<>();
+    public HashMap<Integer, Long> getTotalBytesSentPerThread() {
+        HashMap<Integer, Long> bytesSent = new HashMap<>();
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             bytesSent.put(relpFlooderTask.getThreadId(), relpFlooderTask.getBytesSent());
         }
         return bytesSent;
     }
 
-    public int getTotalBytesSent() {
-        int totalBytesSent = 0;
+    public long getTotalBytesSent() {
+        long totalBytesSent = 0;
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             totalBytesSent += relpFlooderTask.getBytesSent();
         }

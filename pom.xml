@@ -15,7 +15,7 @@
     <revision>0.0.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <sha1/>
-    <rlp_01.version>4.0.1</rlp_01.version>
+    <rlp_03.version>7.0.2</rlp_03.version>
   </properties>
   <licenses>
     <license>
@@ -40,8 +40,8 @@
     <!-- RELP -->
     <dependency>
       <groupId>com.teragrep</groupId>
-      <artifactId>rlp_01</artifactId>
-      <version>${rlp_01.version}</version>
+      <artifactId>rlp_03</artifactId>
+      <version>${rlp_03.version}</version>
     </dependency>
     <!-- Syslog message -->
     <dependency>
