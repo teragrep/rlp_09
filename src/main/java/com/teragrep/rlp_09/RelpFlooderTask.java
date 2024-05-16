@@ -75,6 +75,8 @@ class RelpFlooderTask implements Callable<Object> {
 
     @Override
     public Object call() {
+        final String eventType = "syslog";
+        final String ack = "200 OK\n";
         try (Client client = clientFactory.open(new InetSocketAddress(relpFlooderConfig.getTarget(), relpFlooderConfig.getPort())).get(relpFlooderConfig.getConnectTimeout(), TimeUnit.SECONDS)) {
             CompletableFuture<RelpFrame> open = client.transmit("open", "rlp_09 says hi".getBytes());
             try (RelpFrame openResponse = open.get()) {
@@ -85,10 +87,10 @@ class RelpFlooderTask implements Callable<Object> {
 
             while (stayRunning && iterator.hasNext()) {
                 byte[] record = iterator.next();
-                CompletableFuture<RelpFrame> syslog = client.transmit("syslog", record);
+                CompletableFuture<RelpFrame> syslog = client.transmit(eventType, record);
                 if(relpFlooderConfig.getWaitForAcks()) {
                     try (RelpFrame syslogResponse = syslog.get()) {
-                        if (syslogResponse.payload().toString().equals("200 OK\n")) {
+                        if (syslogResponse.payload().toString().equals(ack)) {
                             throw new RuntimeException("Got unexpected when sending records: " + syslogResponse.payload().toString());
                         }
                     }
