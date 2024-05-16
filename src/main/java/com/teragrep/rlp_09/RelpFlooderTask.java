@@ -47,15 +47,11 @@
 package com.teragrep.rlp_09;
 
 import com.teragrep.rlp_03.channel.context.ConnectContextFactory;
-import com.teragrep.rlp_03.channel.socket.PlainFactory;
-import com.teragrep.rlp_03.channel.socket.SocketFactory;
 import com.teragrep.rlp_03.client.Client;
 import com.teragrep.rlp_03.client.ClientFactory;
 import com.teragrep.rlp_03.eventloop.EventLoop;
-import com.teragrep.rlp_03.eventloop.EventLoopFactory;
 import com.teragrep.rlp_03.frame.RelpFrame;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
@@ -69,27 +65,16 @@ class RelpFlooderTask implements Callable<Object> {
     private final int threadId;
     private final CountDownLatch latch = new CountDownLatch(1);
     private final Iterator<byte[]> iterator;
-    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig, Iterator<byte[]> iterator) throws RuntimeException {
+    private final ClientFactory clientFactory;
+    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig, Iterator<byte[]> iterator, ClientFactory clientFactory) throws RuntimeException {
         this.threadId = threadId;
         this.iterator = iterator;
         this.relpFlooderConfig = relpFlooderConfig;
+        this.clientFactory = clientFactory;
     }
 
     @Override
     public Object call() {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        SocketFactory socketFactory = new PlainFactory();
-        ConnectContextFactory connectContextFactory = new ConnectContextFactory(executorService, socketFactory);
-        EventLoopFactory eventLoopFactory = new EventLoopFactory();
-        EventLoop eventLoop;
-        try {
-            eventLoop = eventLoopFactory.create();
-        } catch (IOException e) {
-            throw new RuntimeException("Can't create EventLoop: " + e.getMessage());
-        }
-        Thread eventLoopThread = new Thread(eventLoop);
-        eventLoopThread.start();
-        ClientFactory clientFactory = new ClientFactory(connectContextFactory, eventLoop);
         try (Client client = clientFactory.open(new InetSocketAddress(relpFlooderConfig.getTarget(), relpFlooderConfig.getPort())).get(relpFlooderConfig.getConnectTimeout(), TimeUnit.SECONDS)) {
             CompletableFuture<RelpFrame> open = client.transmit("open", "rlp_09 says hi".getBytes());
             try (RelpFrame openResponse = open.get()) {
@@ -115,8 +100,6 @@ class RelpFlooderTask implements Callable<Object> {
         } catch (RuntimeException | InterruptedException | TimeoutException | ExecutionException e) {
             throw new RuntimeException("Failed to run flooder: " + e.getMessage());
         }
-        eventLoop.stop();
-        executorService.shutdown();
         latch.countDown();
         return null;
     }

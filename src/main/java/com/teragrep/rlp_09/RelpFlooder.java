@@ -46,6 +46,14 @@
 
 package com.teragrep.rlp_09;
 
+import com.teragrep.rlp_03.channel.context.ConnectContextFactory;
+import com.teragrep.rlp_03.channel.socket.PlainFactory;
+import com.teragrep.rlp_03.channel.socket.SocketFactory;
+import com.teragrep.rlp_03.client.ClientFactory;
+import com.teragrep.rlp_03.eventloop.EventLoop;
+import com.teragrep.rlp_03.eventloop.EventLoopFactory;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -104,8 +112,21 @@ public class RelpFlooder {
         this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.getThreads());
     }
     public void start()  {
+        SocketFactory socketFactory = new PlainFactory();
+        ConnectContextFactory connectContextFactory = new ConnectContextFactory(Executors.newSingleThreadExecutor(), socketFactory);
+        EventLoopFactory eventLoopFactory = new EventLoopFactory();
+        EventLoop eventLoop;
+        try {
+            eventLoop = eventLoopFactory.create();
+        } catch (IOException e) {
+            throw new RuntimeException("Can't create EventLoop: " + e.getMessage());
+        }
+        Thread eventLoopThread = new Thread(eventLoop);
+        eventLoopThread.start();
+        ClientFactory clientFactory = new ClientFactory(connectContextFactory, eventLoop);
+
         for (int i=0; i<relpFlooderConfig.getThreads(); i++) {
-            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i));
+            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i), clientFactory);
             relpFlooderTaskList.add(relpFlooderTask);
         }
         try {
@@ -116,6 +137,13 @@ public class RelpFlooder {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        eventLoop.stop();
+        try {
+            eventLoopThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        executorService.shutdown();
     }
 
     public void stop() {
