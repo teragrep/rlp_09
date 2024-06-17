@@ -46,8 +46,12 @@
 
 package com.teragrep.rlp_09;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RelpFlooderConfig {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpFlooderConfig.class);
     public final String target;
     public final int port;
     public final int threads;
@@ -68,6 +72,19 @@ public class RelpFlooderConfig {
         this.threads = threads;
         this.connectTimeout = connectTimeout;
         this.waitForAcks = waitForAcks;
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Got RelpFlooderConfig: <{}>", this);
+        }
     }
 
+    @Override
+    public String toString() {
+        return "RelpFlooderConfig{" +
+                "target='" + target + '\'' +
+                ", port=" + port +
+                ", threads=" + threads +
+                ", connectTimeout=" + connectTimeout +
+                ", waitForAcks=" + waitForAcks +
+                '}';
+    }
 }

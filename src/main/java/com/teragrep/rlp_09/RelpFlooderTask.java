@@ -78,37 +78,49 @@ class RelpFlooderTask implements Callable<Object> {
 
     @Override
     public Object call() {
+        LOGGER.debug("[Thread <{}>] Entering call()", threadId);
         final String eventType = "syslog";
         final String ack = "200 OK";
+        LOGGER.trace("[Thread <{}>] Trying to create a new client", threadId);
         try (Client client = clientFactory.open(new InetSocketAddress(relpFlooderConfig.target, relpFlooderConfig.port)).get(relpFlooderConfig.connectTimeout, TimeUnit.SECONDS)) {
+            LOGGER.trace("[Thread <{}>] Creating open connection RelpFrame", threadId);
             CompletableFuture<RelpFrame> open = client.transmit(relpFrameFactory.create("open", "open"));
-            try (RelpFrame openResponse = open.get()) {
-                if (!openResponse.payload().toString().startsWith(ack)) {
-                    throw new RuntimeException("Got unexpected response when opening connection: " + openResponse.payload().toString());
-                }
+            LOGGER.trace("[Thread <{}>] Getting OpenResponse from RelpFrame", threadId);
+            String openResponse = open.get().payload().toString();
+            LOGGER.debug("[Thread <{}>] Got OpenResponse: <{}>", threadId, openResponse);
+            if (!openResponse.startsWith(ack)) {
+                throw new RuntimeException("Got unexpected response when opening connection: " + openResponse);
             }
 
+
+            LOGGER.trace("[Thread <{}>] Entering main flooding loop", threadId);
             while (stayRunning && iterator.hasNext()) {
                 String record = iterator.next();
                 CompletableFuture<RelpFrame> syslog = client.transmit(relpFrameFactory.create(eventType, record));
                 if (relpFlooderConfig.waitForAcks) {
-                    try (RelpFrame syslogResponse = syslog.get()) {
-                        if (!syslogResponse.payload().toString().equals(ack)) {
-                            throw new RuntimeException("Got unexpected when sending records: " + syslogResponse.payload().toString());
-                        }
+                    String syslogResponse = syslog.get().payload().toString();
+                    LOGGER.debug("[Thread <{}>] Got syslog response: <{}>", threadId, syslogResponse);
+                    if (!syslogResponse.equals(ack)) {
+                        throw new RuntimeException("Got unexpected when sending records: " + syslogResponse);
                     }
                 }
                 recordsSent++;
                 bytesSent += record.length();
+                LOGGER.trace("[Thread <{}>] Rercords sent: <{}>, bytes sent: <{}>", threadId, recordsSent, bytesSent);
             }
+            LOGGER.trace("[Thread <{}>] Creating close connection RelpFrame", threadId);
             CompletableFuture<RelpFrame> close = client.transmit(relpFrameFactory.create("close", ""));
-            close.get();
-        } catch (TimeoutException ignored) {
-            // Ignore Timeout if server has gone down and so on.
+            LOGGER.trace("[Thread <{}>] Getting close Response from RelpFrame", threadId);
+            String closeResponse = close.get().payload().toString();
+            LOGGER.debug("[Thread <{}>] Got close response: <{}>", threadId, closeResponse);
+        } catch (TimeoutException e) {
+            LOGGER.debug("[Thread <{}>] Received TimeoutException: <{}>", threadId, e.getMessage(), e);
         } catch (RuntimeException | InterruptedException | ExecutionException e) {
             throw new RuntimeException("Failed to run flooder: " + e.getMessage());
         }
+        LOGGER.trace("[Thread <{}>] Running latch.countDown()", threadId);
         latch.countDown();
+        LOGGER.debug("[Thread <{}>] Exiting call();", threadId);
         return null;
     }
 
@@ -122,13 +134,16 @@ class RelpFlooderTask implements Callable<Object> {
         return threadId;
     }
     public void stop()  {
+        LOGGER.debug("[Thread <{}>] Entering stop()", threadId);
         stayRunning=false;
         try {
+            LOGGER.trace("[Thread <{}>] Waiting for latch to countDown", threadId);
             if(!latch.await(5L, TimeUnit.SECONDS)) {
                 throw new RuntimeException("Timed out waiting for thread to shut down");
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        LOGGER.debug("[Thread <{}>] Exiting stop();", threadId);
     }
 }
