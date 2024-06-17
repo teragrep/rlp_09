@@ -46,14 +46,14 @@
 
 package com.teragrep.rlp_09;
 
-import com.teragrep.rlp_03.channel.context.ConnectContextFactory;
 import com.teragrep.rlp_03.client.Client;
 import com.teragrep.rlp_03.client.ClientFactory;
-import com.teragrep.rlp_03.eventloop.EventLoop;
 import com.teragrep.rlp_03.frame.RelpFrame;
+import com.teragrep.rlp_03.frame.RelpFrameFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.concurrent.*;
 
@@ -64,42 +64,48 @@ class RelpFlooderTask implements Callable<Object> {
     private final RelpFlooderConfig relpFlooderConfig;
     private final int threadId;
     private final CountDownLatch latch = new CountDownLatch(1);
-    private final Iterator<byte[]> iterator;
+    private final Iterator<String> iterator;
     private final ClientFactory clientFactory;
-    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig, Iterator<byte[]> iterator, ClientFactory clientFactory) throws RuntimeException {
+    private final RelpFrameFactory relpFrameFactory;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpFlooderTask.class);
+    RelpFlooderTask(int threadId, RelpFlooderConfig relpFlooderConfig, Iterator<String> iterator, ClientFactory clientFactory) throws RuntimeException {
         this.threadId = threadId;
         this.iterator = iterator;
         this.relpFlooderConfig = relpFlooderConfig;
         this.clientFactory = clientFactory;
+        this.relpFrameFactory = new RelpFrameFactory();
     }
 
     @Override
     public Object call() {
         final String eventType = "syslog";
-        final String ack = "200 OK\n";
-        try (Client client = clientFactory.open(new InetSocketAddress(relpFlooderConfig.getTarget(), relpFlooderConfig.getPort())).get(relpFlooderConfig.getConnectTimeout(), TimeUnit.SECONDS)) {
-            CompletableFuture<RelpFrame> open = client.transmit("open", "rlp_09 says hi".getBytes());
+        final String ack = "200 OK";
+        try (Client client = clientFactory.open(new InetSocketAddress(relpFlooderConfig.target, relpFlooderConfig.port)).get(relpFlooderConfig.connectTimeout, TimeUnit.SECONDS)) {
+            CompletableFuture<RelpFrame> open = client.transmit(relpFrameFactory.create("open", "open"));
             try (RelpFrame openResponse = open.get()) {
-                if(!openResponse.payload().toString().startsWith("200 OK")) {
+                if (!openResponse.payload().toString().startsWith(ack)) {
                     throw new RuntimeException("Got unexpected response when opening connection: " + openResponse.payload().toString());
                 }
             }
 
             while (stayRunning && iterator.hasNext()) {
-                byte[] record = iterator.next();
-                CompletableFuture<RelpFrame> syslog = client.transmit(eventType, record);
-                if(relpFlooderConfig.getWaitForAcks()) {
+                String record = iterator.next();
+                CompletableFuture<RelpFrame> syslog = client.transmit(relpFrameFactory.create(eventType, record));
+                if (relpFlooderConfig.waitForAcks) {
                     try (RelpFrame syslogResponse = syslog.get()) {
-                        if (syslogResponse.payload().toString().equals(ack)) {
+                        if (!syslogResponse.payload().toString().equals(ack)) {
                             throw new RuntimeException("Got unexpected when sending records: " + syslogResponse.payload().toString());
                         }
                     }
                 }
                 recordsSent++;
-                bytesSent += record.length;
+                bytesSent += record.length();
             }
-            client.transmit("close", "".getBytes(StandardCharsets.UTF_8));
-        } catch (RuntimeException | InterruptedException | TimeoutException | ExecutionException e) {
+            CompletableFuture<RelpFrame> close = client.transmit(relpFrameFactory.create("close", ""));
+            close.get();
+        } catch (TimeoutException ignored) {
+            // Ignore Timeout if server has gone down and so on.
+        } catch (RuntimeException | InterruptedException | ExecutionException e) {
             throw new RuntimeException("Failed to run flooder: " + e.getMessage());
         }
         latch.countDown();

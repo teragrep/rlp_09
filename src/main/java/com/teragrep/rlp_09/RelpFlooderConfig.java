@@ -48,52 +48,18 @@ package com.teragrep.rlp_09;
 
 public class RelpFlooderConfig {
 
-    private String target="127.0.0.1";
-    private int port=601;
-    private int threads=1;
-    private int connectTimeout=1;
-
-    private boolean waitForAcks=true;
-
-    public void setTarget(String target) {
-        this.target = target;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
-    public void setConnectTimeout(int connectTimeout) {
-        this.connectTimeout = connectTimeout;
-    }
-    public void setWaitForAcks(boolean waitForAcks) {
-        this.waitForAcks = waitForAcks;
-    }
-
-    public String getTarget() {
-        return target;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public int getThreads() {
-        return threads;
-    }
-
-    public int getConnectTimeout() {
-        return connectTimeout;
-    }
-
-    public boolean getWaitForAcks() {
-        return waitForAcks;
-    }
+    public final String target;
+    public final int port;
+    public final int threads;
+    public final int connectTimeout;
+    public final boolean waitForAcks;
 
     public RelpFlooderConfig() {
+        this("127.0.0.1", 601);
+    }
+
+    public RelpFlooderConfig(String target, int port) {
+        this(target, port, 1, 1, true);
     }
 
     public RelpFlooderConfig(String target, int port, int threads, int connectTimeout, boolean waitForAcks) {

@@ -46,8 +46,8 @@
 
 package com.teragrep.rlp_09;
 
-import com.teragrep.rlp_03.channel.context.ConnectContextFactory;
 import com.teragrep.rlp_03.channel.socket.PlainFactory;
+import com.teragrep.rlp_03.channel.context.ConnectContextFactory;
 import com.teragrep.rlp_03.channel.socket.SocketFactory;
 import com.teragrep.rlp_03.client.ClientFactory;
 import com.teragrep.rlp_03.eventloop.EventLoop;
@@ -106,14 +106,16 @@ public class RelpFlooder {
     public RelpFlooder(RelpFlooderConfig relpFlooderConfig){
         this(relpFlooderConfig, new ExampleRelpFlooderIteratorFactory());
     }
+
     public RelpFlooder(RelpFlooderConfig relpFlooderConfig, RelpFlooderIteratorFactory iteratorFactory) {
         this.relpFlooderConfig = relpFlooderConfig;
         this.iteratorFactory = iteratorFactory;
-        this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.getThreads());
+        this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.threads);
     }
+
     public void start()  {
         SocketFactory socketFactory = new PlainFactory();
-        ConnectContextFactory connectContextFactory = new ConnectContextFactory(Executors.newSingleThreadExecutor(), socketFactory);
+        ConnectContextFactory connectContextFactory = new ConnectContextFactory(Executors.newFixedThreadPool(relpFlooderConfig.threads), socketFactory);
         EventLoopFactory eventLoopFactory = new EventLoopFactory();
         EventLoop eventLoop;
         try {
@@ -125,7 +127,7 @@ public class RelpFlooder {
         eventLoopThread.start();
         ClientFactory clientFactory = new ClientFactory(connectContextFactory, eventLoop);
 
-        for (int i=0; i<relpFlooderConfig.getThreads(); i++) {
+        for (int i=0; i<relpFlooderConfig.threads; i++) {
             RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i), clientFactory);
             relpFlooderTaskList.add(relpFlooderTask);
         }
