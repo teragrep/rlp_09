@@ -46,10 +46,19 @@
 
 package com.teragrep.rlp_09;
 
+import com.teragrep.rlp_03.channel.socket.PlainFactory;
+import com.teragrep.rlp_03.channel.context.ConnectContextFactory;
+import com.teragrep.rlp_03.channel.socket.SocketFactory;
+import com.teragrep.rlp_03.client.ClientFactory;
+import com.teragrep.rlp_03.eventloop.EventLoop;
+import com.teragrep.rlp_03.eventloop.EventLoopFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -57,33 +66,33 @@ import java.util.concurrent.Future;
 public class RelpFlooder {
     private final ExecutorService executorService;
     List<RelpFlooderTask> relpFlooderTaskList = new ArrayList<>();
-
-    public HashMap<Integer, Integer> getRecordsSentPerThread() {
-        HashMap<Integer, Integer> recordsSent = new HashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpFlooder.class);
+    public HashMap<Integer, Long> getRecordsSentPerThread() {
+        HashMap<Integer, Long> recordsSent = new HashMap<>();
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             recordsSent.put(relpFlooderTask.getThreadId(), relpFlooderTask.getRecordsSent());
         }
         return recordsSent;
     }
 
-    public int getTotalRecordsSent() {
-        int totalrecordsSent = 0;
+    public long getTotalRecordsSent() {
+        long totalrecordsSent = 0;
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             totalrecordsSent += relpFlooderTask.getRecordsSent();
         }
         return totalrecordsSent;
     }
 
-    public HashMap<Integer, Integer> getTotalBytesSentPerThread() {
-        HashMap<Integer, Integer> bytesSent = new HashMap<>();
+    public HashMap<Integer, Long> getTotalBytesSentPerThread() {
+        HashMap<Integer, Long> bytesSent = new HashMap<>();
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             bytesSent.put(relpFlooderTask.getThreadId(), relpFlooderTask.getBytesSent());
         }
         return bytesSent;
     }
 
-    public int getTotalBytesSent() {
-        int totalBytesSent = 0;
+    public long getTotalBytesSent() {
+        long totalBytesSent = 0;
         for(RelpFlooderTask relpFlooderTask : relpFlooderTaskList){
             totalBytesSent += relpFlooderTask.getBytesSent();
         }
@@ -99,27 +108,67 @@ public class RelpFlooder {
     public RelpFlooder(RelpFlooderConfig relpFlooderConfig){
         this(relpFlooderConfig, new ExampleRelpFlooderIteratorFactory());
     }
+
     public RelpFlooder(RelpFlooderConfig relpFlooderConfig, RelpFlooderIteratorFactory iteratorFactory) {
         this.relpFlooderConfig = relpFlooderConfig;
         this.iteratorFactory = iteratorFactory;
-        this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.getThreads());
+        this.executorService = Executors.newFixedThreadPool(relpFlooderConfig.threads);
     }
-    public void start()  {
-        for (int i=0; i<relpFlooderConfig.getThreads(); i++) {
-            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i));
+
+    public void start() {
+        LOGGER.trace("Creating a PlainFactory");
+        SocketFactory socketFactory = new PlainFactory();
+        LOGGER.trace("Creating ConnectContextFactory");
+        ConnectContextFactory connectContextFactory = new ConnectContextFactory(Executors.newFixedThreadPool(relpFlooderConfig.threads), socketFactory);
+        LOGGER.trace("Creating EventLoopfactory");
+        EventLoopFactory eventLoopFactory = new EventLoopFactory();
+        EventLoop eventLoop;
+        try {
+            LOGGER.trace("Creating EventLoop from EventLoopFactory");
+            eventLoop = eventLoopFactory.create();
+        } catch (IOException e) {
+            throw new RuntimeException("Can't create EventLoop: " + e.getMessage());
+        }
+        LOGGER.trace("Creating EventLoopThread");
+        Thread eventLoopThread = new Thread(eventLoop);
+        LOGGER.trace("Starting EventLoopThread");
+        eventLoopThread.start();
+        LOGGER.trace("Creating ClientFactory");
+        ClientFactory clientFactory = new ClientFactory(connectContextFactory, eventLoop);
+
+        for (int i=0; i<relpFlooderConfig.threads; i++) {
+            LOGGER.trace("Creating RelpFlooderTask number <{}>", i);
+            RelpFlooderTask relpFlooderTask = new RelpFlooderTask(i, relpFlooderConfig, iteratorFactory.get(i), clientFactory);
             relpFlooderTaskList.add(relpFlooderTask);
         }
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Got <{}> tasks in RelpFlooderTaskList: <{}>", relpFlooderTaskList.size(), relpFlooderTaskList);
+        }
         try {
+            LOGGER.trace("Invoking all RelpFlooderTaskList tasks");
             List<Future<Object>> futures = executorService.invokeAll(relpFlooderTaskList);
             for(Future<Object> future : futures) {
+                LOGGER.trace("Waiting for future <{}>", future);
                 future.get();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+        LOGGER.trace("Stopping EventLoop");
+        eventLoop.stop();
+        try {
+            LOGGER.trace("Joining EventLoopThread");
+            eventLoopThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        LOGGER.trace("Shutting down ExecutorService");
+        executorService.shutdown();
     }
 
     public void stop() {
+        LOGGER.trace("Entering stop(), running RelpFlooderTask::stop");
         relpFlooderTaskList.parallelStream().forEach(RelpFlooderTask::stop);
+        LOGGER.trace("Exiting stop()");
     }
 }

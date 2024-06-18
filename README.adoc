@@ -47,7 +47,7 @@ Example Iterator will send only static records like as
 
 [source,sh]
 ----
-<14>1 2024-02-29T13:58:05.605Z localhost rlp_09 - - - Example rlo_09 event
+<14>1 2024-02-29T13:58:05.605Z localhost rlp_09 - - - Example rlo_09 record
 ----
 
 == Configurations

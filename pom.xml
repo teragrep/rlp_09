@@ -9,13 +9,15 @@
   <url>https://teragrep.com</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>8</maven.compiler.source>
-    <maven.compiler.target>8</maven.compiler.target>
-    <java.version>8</java.version>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <java.version>17</java.version>
     <revision>0.0.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <sha1/>
-    <rlp_01.version>4.0.1</rlp_01.version>
+    <rlp_03.version>0.0.2-SNAPSHOT</rlp_03.version>
+    <log4j2.version>2.23.1</log4j2.version>
+    <slf4j.version>2.0.13</slf4j.version>
   </properties>
   <licenses>
     <license>
@@ -40,14 +42,35 @@
     <!-- RELP -->
     <dependency>
       <groupId>com.teragrep</groupId>
-      <artifactId>rlp_01</artifactId>
-      <version>${rlp_01.version}</version>
+      <artifactId>rlp_03</artifactId>
+      <version>${rlp_03.version}</version>
     </dependency>
     <!-- Syslog message -->
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>rlo_14</artifactId>
       <version>1.0.1</version>
+    </dependency>
+    <!-- logging -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j2.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${log4j2.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <version>${log4j2.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
   </dependencies>
   <build>
@@ -120,7 +143,7 @@
               <goal>jar</goal>
             </goals>
             <configuration>
-              <source>8</source>
+              <source>17</source>
             </configuration>
           </execution>
         </executions>
