@@ -21,7 +21,7 @@ jobs:
       - name: Setup Maven Central
         uses: actions/setup-java@v2
         with:
-          java-version: 8.0.292+10
+          java-version: 17
           distribution: 'adopt'
 
           server-id: ossrh
@@ -42,7 +42,7 @@ jobs:
       - name: Setup GitHub Packages
         uses: actions/setup-java@v2
         with:
-          java-version: 8.0.292+10
+          java-version: 17
           distribution: 'adopt'
 
       - name: Publish to GitHub Packages
