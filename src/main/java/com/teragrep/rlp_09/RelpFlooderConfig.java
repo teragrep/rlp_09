@@ -46,42 +46,45 @@
 
 package com.teragrep.rlp_09;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RelpFlooderConfig {
 
-    private String target="127.0.0.1";
-    private int port=601;
-    private int threads=1;
-
-    public void setTarget(String target) {
-        this.target = target;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
-
-    public String getTarget() {
-        return target;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public int getThreads() {
-        return threads;
-    }
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelpFlooderConfig.class);
+    public final String target;
+    public final int port;
+    public final int threads;
+    public final int connectTimeout;
+    public final boolean waitForAcks;
 
     public RelpFlooderConfig() {
+        this("127.0.0.1", 601);
     }
 
-    public RelpFlooderConfig(String target, int port, int threads) {
+    public RelpFlooderConfig(String target, int port) {
+        this(target, port, 1, 1, true);
+    }
+
+    public RelpFlooderConfig(String target, int port, int threads, int connectTimeout, boolean waitForAcks) {
         this.target = target;
         this.port = port;
         this.threads = threads;
+        this.connectTimeout = connectTimeout;
+        this.waitForAcks = waitForAcks;
+        if(LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Got RelpFlooderConfig: <{}>", this);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "RelpFlooderConfig{" +
+                "target='" + target + '\'' +
+                ", port=" + port +
+                ", threads=" + threads +
+                ", connectTimeout=" + connectTimeout +
+                ", waitForAcks=" + waitForAcks +
+                '}';
     }
 }

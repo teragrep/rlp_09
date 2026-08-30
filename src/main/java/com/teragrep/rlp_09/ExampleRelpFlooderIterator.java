@@ -50,28 +50,26 @@ import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Iterator;
 
-public class ExampleRelpFlooderIterator implements Iterator<byte[]> {
-    private final byte[] record =
+public class ExampleRelpFlooderIterator implements Iterator<String> {
+    private final String record =
             new SyslogMessage()
                     .withTimestamp(Instant.now().toEpochMilli())
                     .withAppName("rlp_09")
                     .withHostname("localhost")
                     .withFacility(Facility.USER)
                     .withSeverity(Severity.INFORMATIONAL)
-                    .withMsg("Example rlo_09 event")
-                    .toRfc5424SyslogMessage()
-                    .getBytes(StandardCharsets.UTF_8);
+                    .withMsg("Example rlo_09 record")
+                    .toRfc5424SyslogMessage();
     @Override
     public boolean hasNext() {
         return true;
     }
 
     @Override
-    public byte[] next() {
+    public String next() {
         return record;
     }
 }
